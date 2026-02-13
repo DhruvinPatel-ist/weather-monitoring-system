@@ -1,0 +1,353 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-roboto);
+  --font-noto-kufi-arabic: var(--font-noto-kufi-arabic);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-blue1: #00a1ae;
+  --color-blue2: #008b96;
+  --color-blue3: #009fac;
+  --color-blue4: #1d396b;
+  --color-blue5: #a7c0de;
+  --color-gray1: #e6edef;
+  --color-gray2: #eaecf0;
+  --color-gray3: #47536d;
+  --color-white: #ffffff;
+  --color-white1: #f8fafc;
+  --color-green1: #2cc3a6;
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  * {
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: #009fac #f0f0f0; /* Firefox */
+  }
+
+  /* WebKit (Chrome, Safari, Edge) */
+  *::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #f0f0f0;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: #009fac;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  /* Dark Mode Support */
+  @media (prefers-color-scheme: dark) {
+    * {
+      scrollbar-color: #009fac #ffffff;
+    }
+
+    *::-webkit-scrollbar-track {
+      background: #ffffff;
+    }
+
+    *::-webkit-scrollbar-thumb {
+      background-color: #555;
+    }
+  }
+
+  .hide-scrollbar {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  /* ::-webkit-scrollbar {
+    display: none;
+  } */
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  /* * {
+    -ms-overflow-style: none;
+    scrollbar-width: none; 
+  } */
+  /* Enhanced Custom Tooltip Styles */
+  .custom-tooltip {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    font-size: 12px;
+    min-width: 160px;
+    max-width: 300px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      sans-serif;
+    z-index: 1000;
+  }
+
+  .custom-tooltip.single-series {
+    min-width: 120px;
+  }
+
+  .custom-tooltip.multi-series {
+    min-width: 200px;
+  }
+
+  .tooltip-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #1f2937;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 6px;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .tooltip-time-icon {
+    font-size: 10px;
+  }
+
+  .tooltip-series {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+    gap: 8px;
+    padding: 4px 0;
+    transition: background-color 0.2s ease;
+  }
+
+  .tooltip-series:hover {
+    background-color: #f9fafb;
+    border-radius: 4px;
+    padding: 4px 6px;
+    margin: 2px -6px;
+  }
+
+  .tooltip-series:last-of-type {
+    margin-bottom: 0;
+  }
+
+  .tooltip-series.highest-value {
+    background-color: #fef3c7;
+    border-radius: 4px;
+    padding: 6px 8px;
+    margin: 2px -8px 6px -8px;
+    border-left: 3px solid #f59e0b;
+  }
+
+  .tooltip-marker {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .tooltip-label {
+    color: #6b7280;
+    font-weight: 500;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .tooltip-value {
+    font-weight: 600;
+    color: #111827;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .tooltip-badge {
+    background-color: #10b981;
+    color: white;
+    font-size: 9px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .tooltip-summary {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #e5e7eb;
+    background-color: #f8fafc;
+    border-radius: 4px;
+    padding: 8px;
+    margin: 8px -4px -4px -4px;
+  }
+
+  .tooltip-summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .tooltip-summary-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .tooltip-summary-label {
+    color: #6b7280;
+    font-weight: 500;
+    font-size: 11px;
+  }
+
+  .tooltip-summary-value {
+    color: #374151;
+    font-weight: 600;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+  .leaflet-control-attribution{
+    display: none !important;
+  }
+
+  /* Hide reCAPTCHA v3 badge (bottom-right logo) - functionality unchanged */
+  .grecaptcha-badge {
+    visibility: hidden !important;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .custom-tooltip {
+      font-size: 11px;
+      padding: 10px;
+      min-width: 140px;
+      max-width: 250px;
+    }
+
+    .tooltip-marker {
+      width: 8px;
+      height: 8px;
+    }
+
+    .tooltip-badge {
+      font-size: 8px;
+      padding: 1px 4px;
+    }
+  }
+}

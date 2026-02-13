@@ -1,0 +1,30 @@
+// import type { Metadata } from "next";
+// import { Roboto } from "next/font/google";
+// import "@/styles/globals.css";
+// import { SessionProvider } from "@/providers/SessionProvider";
+// // import { Provider } from "@radix-ui/react-tooltip";
+// // import { Providers } from "./providers";
+// const roboto = Roboto({
+//   variable: "--font-roboto",
+//   weight: ["400", "500", "700"],
+//   subsets: ["latin"],
+// });
+
+// export const metadata: Metadata = {
+//   title: "FEA Weather",
+//   description: "Fea Weather",
+// };
+
+// export default function RootLayout({
+//   children,
+// }: {
+//   children: React.ReactNode;
+// }) {
+//   return (
+//     <html lang="en" className={roboto.variable}>
+//       <body className="font-roboto">
+//         <SessionProvider>{children}</SessionProvider>
+//       </body>
+//     </html>
+//   );
+// }
