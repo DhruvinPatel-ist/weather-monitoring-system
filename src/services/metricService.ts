@@ -22,8 +22,11 @@ function safeNumber(value: number | null | undefined): number {
 }
 
 export const frcloggerService = {
-  async getMegetfrclogger(siteId: string, timeframe: string) {
-    const response = await api.get(`/frclogger/${siteId}/${timeframe}`);
+  async getMegetfrclogger(siteId: string, timeframe: string, dateTimeRange?: string) {
+    const url = dateTimeRange 
+      ? `/frclogger/${siteId}/${timeframe}/${dateTimeRange}`
+      : `/frclogger/${siteId}/${timeframe}`;
+    const response = await api.get(url);
     const data = response.data;
     // console.log(data);
     return data;

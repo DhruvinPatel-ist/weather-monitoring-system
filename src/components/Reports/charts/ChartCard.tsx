@@ -14,6 +14,7 @@ interface ChartCardProps {
     siteName: string;
     data: { time: string; fullTime?: string; value: number }[];
   }[];
+  stationName?: string;
 }
 
 export default function ChartCard({
@@ -21,14 +22,28 @@ export default function ChartCard({
   data,
   color,
   multiSeries,
+  stationName,
 }: ChartCardProps) {
   const [isOpen, setIsOpen] = useState(false);
+
+  const multiSeriesLegend =
+    multiSeries?.map((series, index) => ({
+      label: series.siteName,
+      color: `hsl(${(index * 67) % 360}, 70%, 50%)`,
+    })) ?? [];
 
   return (
     <>
       <Card className="relative h-[250px] p-2 shadow-sm border border-gray-200">
-        <div className="flex justify-between items-center mb-2">
-          <div className="text-sm font-semibold">{label}</div>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="text-sm font-semibold truncate">{label}</div>
+            {stationName && (
+              <span className="px-2 py-0.5 rounded-full bg-gray-100 text-[11px] text-gray-700 truncate max-w-[140px]">
+                {stationName}
+              </span>
+            )}
+          </div>
           <button
             onClick={() => setIsOpen(true)}
             className="text-gray-500 hover:text-black"
@@ -56,7 +71,9 @@ export default function ChartCard({
         data={data}
         color={color}
         multiSeries={multiSeries}
+        staticLegend={multiSeriesLegend}
         label={label}
+        stationName={stationName}
       />
       {/* Modal for fullscreen chart */}
       {/* <Dialog open={isOpen} onOpenChange={setIsOpen}>

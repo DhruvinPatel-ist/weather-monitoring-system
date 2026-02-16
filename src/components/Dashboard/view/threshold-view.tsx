@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useMemo, useCallback } from "react";
+import { useRef, useEffect, useMemo, useCallback, useState } from "react";
 import {
   Table,
   TableBody,
@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { ArrowUp, ArrowDown } from "lucide-react";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -70,18 +71,29 @@ type DisplayRow = {
 interface ThresholdViewProps {
   timeframe: any;
   stations: Station[];
+  dateTimeRange?: string;
 }
 
 export default function ThresholdView({
   timeframe,
   stations,
+  dateTimeRange: propDateTimeRange,
 }: ThresholdViewProps) {
   const t = useTranslations("Admin");
   const commonT = useTranslations("Common");
   const dashboardT = useTranslations("Dashboard");
+  const [dateSortDirection, setDateSortDirection] = useState<"asc" | "desc">(
+    "desc"
+  );
+  const toggleDateSort = () => {
+    setDateSortDirection((prev) => (prev === "desc" ? "asc" : "desc"));
+  };
 
   // Memoize date range calculation
   const dateTimeRange = useMemo(() => {
+    if (propDateTimeRange) {
+      return propDateTimeRange;
+    }
     const now = dayjs().tz("Asia/Dubai");
 
     switch (timeframe) {
@@ -115,7 +127,7 @@ export default function ThresholdView({
       default:
         return "";
     }
-  }, [timeframe]);
+  }, [timeframe, propDateTimeRange]);
 
   const { data: rawData = [], isLoading } = useAlerts(timeframe, dateTimeRange);
 
@@ -204,9 +216,11 @@ export default function ThresholdView({
 
     return (data as AlertItem[])
       .slice()
-      .sort(
-        (a, b) => dayjs(b.CreatedAt).valueOf() - dayjs(a.CreatedAt).valueOf()
-      )
+      .sort((a, b) => {
+        const aTime = dayjs(a.CreatedAt).valueOf();
+        const bTime = dayjs(b.CreatedAt).valueOf();
+        return dateSortDirection === "desc" ? bTime - aTime : aTime - bTime;
+      })
       .map((item) => ({
         id: item.id || item.ID || "",
         date: formatDate(item.CreatedAt),
@@ -220,7 +234,7 @@ export default function ThresholdView({
         interval: item.interval,
         timestamp: formatTime(item.CreatedAt),
       }));
-  }, [data, formatDate, getStationName, formatTime, t]);
+  }, [data, formatDate, getStationName, formatTime, t, dateSortDirection]);
 
   // Memoize table headers
   const tableHeaders = useMemo(
@@ -249,14 +263,42 @@ export default function ThresholdView({
               <Table className="table-fixed w-full">
                 <TableHeader className="sticky top-0 bg-white z-10">
                   <TableRow>
-                    {tableHeaders.map((header, index) => (
-                      <TableHead
-                        key={header.key}
-                        className={`${COLUMN_WIDTHS[index].width} font-semibold text-center`}
-                      >
-                        {header.label}
-                      </TableHead>
-                    ))}
+                    {tableHeaders.map((header, index) => {
+                      const isDateCol = header.key === "date";
+                      return (
+                        <TableHead
+                          key={header.key}
+                          className={`${COLUMN_WIDTHS[index].width} font-semibold text-center ${
+                            isDateCol ? "cursor-pointer select-none" : ""
+                          }`}
+                          onClick={isDateCol ? toggleDateSort : undefined}
+                        >
+                          {isDateCol ? (
+                            <div className="flex items-center justify-center gap-2">
+                              <span>{header.label}</span>
+                              <span className="flex flex-col">
+                                <ArrowUp
+                                  className={`h-3 w-3 -mb-0.5 ${
+                                    dateSortDirection === "asc"
+                                      ? "text-blue3 opacity-100"
+                                      : "text-gray-400 opacity-40"
+                                  }`}
+                                />
+                                <ArrowDown
+                                  className={`h-3 w-3 -mt-0.5 ${
+                                    dateSortDirection === "desc"
+                                      ? "text-blue3 opacity-100"
+                                      : "text-gray-400 opacity-40"
+                                  }`}
+                                />
+                              </span>
+                            </div>
+                          ) : (
+                            header.label
+                          )}
+                        </TableHead>
+                      );
+                    })}
                   </TableRow>
                 </TableHeader>
               </Table>

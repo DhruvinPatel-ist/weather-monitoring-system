@@ -15,6 +15,7 @@ import {
 import { Button } from "../ui/button";
 import { ChevronDown } from "lucide-react";
 import DownloadReportComponent from "./download-report";
+import { ParameterService } from "@/services/parameterService";
 
 interface Site {
   id: string;
@@ -78,6 +79,12 @@ export default function ReportsHeader({
   const [selectedSites, setSelectedSites] = useState<string[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [availableMetrics, setAvailableMetrics] = useState<
+    Array<{ key: string; name: string; unit: string }>
+  >([]);
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
+  const [isMetricsDropdownOpen, setIsMetricsDropdownOpen] = useState(false);
+  const metricsDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (stations.length > 0) {
@@ -93,8 +100,59 @@ export default function ReportsHeader({
     if (resetTrigger > 0) {
       setSelectedSites([]);
       setIsDropdownOpen(false);
+      setSelectedMetrics([]);
+      setIsMetricsDropdownOpen(false);
     }
   }, [resetTrigger]);
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      // if (selectedSites.length === 0) {
+      //   setAvailableMetrics([]);
+      //   setSelectedMetrics([]); // Clear selected metrics when no sites
+      //   return;
+      // }
+
+      try {
+        const paramLists = await Promise.all([
+          ParameterService.getAllParameter()
+        ]);
+        const allParams = paramLists.flat();
+
+        // Group metrics by name + unit so the same metric across stations behaves as one option
+        const uniqueMetricsMap = new Map<
+          string,
+          { key: string; name: string; unit: string }
+        >();
+        allParams.forEach((param: any) => {
+          const name = param.ParameterName;
+          const unit = param.UnitName || "";
+          const key = `${name}__${unit}`;
+          if (!uniqueMetricsMap.has(key)) {
+            uniqueMetricsMap.set(key, { key, name, unit });
+          }
+        });
+
+        const metrics = Array.from(uniqueMetricsMap.values()).sort((a, b) =>
+          a.name.localeCompare(b.name)
+        );
+        setAvailableMetrics(metrics);
+
+        setSelectedMetrics((prev) => {
+          const preserved = prev.filter((key) => metrics.some((m) => m.key === key));
+          if (preserved.length === prev.length && preserved.every((key, idx) => prev[idx] === key)) {
+            return prev;
+          }
+          return preserved;
+        });
+      } catch (error) {
+        console.error("Failed to fetch metrics:", error);
+        setAvailableMetrics([]);
+      }
+    };
+
+    fetchMetrics();
+  }, []);
 
   useEffect(() => {
     const handleSiteSelected = (event: CustomEvent) => {
@@ -117,6 +175,8 @@ export default function ReportsHeader({
     const handleSiteCleared = () => {
       setSelectedSites([]);
       setIsDropdownOpen(false);
+      setSelectedMetrics([]);
+      setIsMetricsDropdownOpen(false);
     };
     window.addEventListener("siteCleared", handleSiteCleared);
     return () => {
@@ -165,6 +225,12 @@ export default function ReportsHeader({
       ) {
         setIsDropdownOpen(false);
       }
+      if (
+        metricsDropdownRef.current &&
+        !metricsDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsMetricsDropdownOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -197,6 +263,64 @@ export default function ReportsHeader({
     if (onDataReset) onDataReset();
   };
 
+  const handleMetricChange = (metricKey: string, checked: boolean) => {
+    const updatedMetrics = checked
+      ? [...selectedMetrics, metricKey]
+      : selectedMetrics.filter((key) => key !== metricKey);
+
+    setSelectedMetrics(updatedMetrics);
+
+    const metricSelectedEvent = new CustomEvent("metricSelected", {
+      detail: {
+        metricKeys: updatedMetrics,
+      },
+    });
+    window.dispatchEvent(metricSelectedEvent);
+  };
+
+ useEffect(() => {
+    const handleSidebarMetricsChanged = (event: CustomEvent) => {
+      const { metricKeys } = event.detail || {};
+      if (!Array.isArray(metricKeys)) return;
+      setSelectedMetrics(metricKeys);
+    };
+
+    window.addEventListener(
+      "metricsSidebarChanged",
+      handleSidebarMetricsChanged as EventListener
+    );
+    return () => {
+      window.removeEventListener(
+        "metricsSidebarChanged",
+        handleSidebarMetricsChanged as EventListener
+      );
+    };
+  }, []);
+
+  const getMetricsDropdownLabel = () => {
+   if (selectedSites.length === 0) {
+      return r("selectParameters");
+    }
+    if (availableMetrics.length === 0) {
+      return r("loadingParameter");
+    }
+    if (selectedMetrics.length === 0) {
+      return r("selectParameters");
+    }
+
+    const selectedNames = selectedMetrics
+      .map((key) => {
+        const metric = availableMetrics.find((m) => m.key === key);
+        return metric
+          ? `${metric.name}${metric.unit ? ` (${metric.unit})` : ""}`
+          : "";
+      })
+      .filter(Boolean);
+
+    return selectedNames.length > 1
+      ? `${selectedNames[0]} +${selectedNames.length - 1} ${r("moreSites")}`
+      : selectedNames[0];
+  };
   const handleDateRangeChange = (start: Date, end: Date) => {
     if (onDateRangeChange) onDateRangeChange(start, end);
     if (onDataReset) onDataReset();
@@ -290,6 +414,46 @@ export default function ReportsHeader({
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+            <div className="">
+              <div className="relative" ref={metricsDropdownRef}>
+                <Button
+                  onClick={() => setIsMetricsDropdownOpen(!isMetricsDropdownOpen)}
+                  disabled={selectedSites.length === 0}
+                  className="w-[170px] bg-white px-4 py-2 border border-gray-300 rounded-md text-left text-black truncate disabled:bg-gray-100 disabled:text-gray-400"
+                >
+                  {getMetricsDropdownLabel()}
+                </Button>
+
+                {isMetricsDropdownOpen && selectedSites.length > 0 && (
+                  <div className="absolute z-10 bg-white border border-gray-300 rounded-md shadow-md mt-2 w-[220px] max-h-60 overflow-y-auto hide-scrollbar">
+                    {availableMetrics.length === 0 ? (
+                      <div className="p-4 text-sm text-gray-500">
+                        {r("loadingMetrics") || "Loading metrics..."}
+                      </div>
+                    ) : (
+                      availableMetrics.map((metric) => (
+                        <label
+                          key={metric.key}
+                          className="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                        >
+                              <input
+                            type="checkbox"
+                            checked={selectedMetrics.includes(metric.key)}
+                            onChange={(e) =>
+                              handleMetricChange(metric.key, e.target.checked)
+                            }
+                            className="mx-2"
+                          />
+                          <span className="text-sm">
+                            {metric.name}{metric.unit ? ` (${metric.unit})` : ""}
+                          </span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
 
             <DateRangePicker
               startDate={startDate}
@@ -372,6 +536,43 @@ export default function ReportsHeader({
           </DropdownMenuContent>
         </DropdownMenu>
 
+        <div className="relative" ref={metricsDropdownRef}>
+          <button
+            onClick={() => setIsMetricsDropdownOpen(!isMetricsDropdownOpen)}
+            disabled={selectedSites.length === 0}
+            className="w-[220px] bg-white px-4 py-2 border border-gray-300 rounded-md text-left truncate disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+          >
+            {getMetricsDropdownLabel()}
+          </button>
+          {isMetricsDropdownOpen && selectedSites.length > 0 && (
+            <div className="absolute z-10 bg-white border border-gray-300 rounded-md shadow-md mt-2 w-[220px] max-h-60 overflow-y-auto hide-scrollbar">
+              {availableMetrics.length === 0 ? (
+                <div className="p-4 text-sm text-gray-500">
+                  {r("loadingMetrics") || "Loading metrics..."}
+                </div>
+              ) : (
+                availableMetrics.map((metric) => (
+                  <label
+                    key={metric.key}
+                    className="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedMetrics.includes(metric.key)}
+                      onChange={(e) =>
+                        handleMetricChange(metric.key, e.target.checked)
+                      }
+                      className="mx-2"
+                    />
+                    <span className="text-sm">
+                      {metric.name}{metric.unit ? ` (${metric.unit})` : ""}
+                    </span>
+                  </label>
+                ))
+              )}
+            </div>
+          )}
+        </div>
         <DateRangePicker
           startDate={startDate}
           endDate={endDate}

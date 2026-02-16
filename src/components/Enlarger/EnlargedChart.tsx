@@ -309,9 +309,14 @@ export default function EnlargedChart({
     { id: "9", title: "Masafi", titleAr: "مسافي" },
     { id: "10", title: "Mohammed Bin Zayed", titleAr: "محمد بن زايد" },
   ];
-  const site = siteData.find((s) => s.id === (title ?? ""));
-  if (site) {
-    title = isRTL ? site.titleAr : site.title;
+ let displayTitle = title;
+  if (stationName && !multiSeries) {
+    displayTitle = `${stationName}`;
+  } else {
+   const site = siteData.find((s) => s.id === (title ?? ""));
+    if (site) {
+      displayTitle = isRTL ? site.titleAr : site.title;
+    }
   }
 
   // legend items
@@ -718,7 +723,7 @@ export default function EnlargedChart({
                   isRTL ? "mr-5" : ""
                 }`}
               >
-                {title}
+                {displayTitle}
               </DialogTitle>
 
               {isMobile && (

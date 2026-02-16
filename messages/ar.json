@@ -395,7 +395,9 @@
     "selectSites": "اختر الموقع/المواقع",
     "selectTimeframe": "اختر الإطار الزمني",
     "moreSites": "أكثر",
-    "timeframe": "الإطار الزمني"
+    "timeframe": "الإطار الزمني",
+    "loadingParameter": "معلمات التحميل ...",
+    "selectParameters": "تحديد المعلمات"
   },
   "StationsList": {
     "listOfStations": "قائمة المحطات",

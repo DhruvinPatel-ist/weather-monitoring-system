@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useThresholds } from "@/hooks/useThresholds";
 import { useThresholdMutations } from "@/hooks/useThresholdMutations";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import PaginationControls from "@/hooks/shared/PaginationControls";
 import { useAllParameters } from "@/hooks/useAllParameters";
+import { ArrowUp, ArrowDown } from "lucide-react";
 
 interface ThresholdManagementProps {
   page: number;
@@ -44,6 +45,9 @@ export default function ThresholdManagement({
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [createdSortDirection, setCreatedSortDirection] = useState<
+    "asc" | "desc"
+  >("desc");
 
   // const isMobileOrTablet = useDeviceDetection();
 
@@ -127,11 +131,23 @@ export default function ThresholdManagement({
   }
 
   const startIndex = (page - 1) * perPage;
-  const paginatedThresholds = thresholds.slice(
+  const sortedThresholds = useMemo(() => {
+    const copy = [...thresholds] as any[];
+    copy.sort((a, b) => {
+      const aTime = a.CreatedAt ? new Date(a.CreatedAt).getTime() : 0;
+      const bTime = b.CreatedAt ? new Date(b.CreatedAt).getTime() : 0;
+      return createdSortDirection === "desc" ? bTime - aTime : aTime - bTime;
+    });
+    return copy;
+  }, [thresholds, createdSortDirection]);
+  const paginatedThresholds = sortedThresholds.slice(
     startIndex,
     startIndex + perPage
   );
 
+  const toggleCreatedSort = () => {
+    setCreatedSortDirection((prev) => (prev === "desc" ? "asc" : "desc"));
+  };
   return (
     <div className="w-full p-2">
       <div className="flex items-center justify-between mt-4 mb-4">
@@ -172,7 +188,30 @@ export default function ThresholdManagement({
                 <th className="py-3 px-4 text-center">Comparator</th>
                 <th className="py-3 px-4 text-center">Value</th>
                 <th className="py-3 px-4 text-center">{t("interval")}</th>
-                <th className="py-3 px-4 text-center">{t("createdDate")}</th>
+                <th
+                  className="py-3 px-4 text-center cursor-pointer select-none"
+                  onClick={toggleCreatedSort}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <span>{t("createdDate")}</span>
+                    <span className="flex flex-col">
+                      <ArrowUp
+                        className={`h-3 w-3 -mb-0.5 ${
+                          createdSortDirection === "asc"
+                            ? "text-blue3 opacity-100"
+                            : "text-gray-400 opacity-40"
+                        }`}
+                      />
+                      <ArrowDown
+                        className={`h-3 w-3 -mt-0.5 ${
+                          createdSortDirection === "desc"
+                            ? "text-blue3 opacity-100"
+                            : "text-gray-400 opacity-40"
+                        }`}
+                      />
+                    </span>
+                  </div>
+                </th>
                 <th className="py-3 px-4 text-center">{t("actions")}</th>
               </tr>
             </thead>

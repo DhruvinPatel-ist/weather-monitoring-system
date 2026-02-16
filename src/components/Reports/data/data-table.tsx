@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 import { ParameterService, Parameter } from "@/services/parameterService";
+import { ArrowUp, ArrowDown } from "lucide-react";
 
 // New interfaces for the dynamic data structure
 interface GeneratedDataItem {
@@ -43,6 +44,9 @@ export default function SiteDataTable({
   const [parameters, setParameters] = useState<Parameter[]>([]);
   const [loading, setLoading] = useState(true);
   const [processedData, setProcessedData] = useState<ProcessedTableRow[]>([]);
+  const [timestampSortDirection, setTimestampSortDirection] = useState<
+    "asc" | "desc"
+  >("desc");
 
   const headerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -241,6 +245,15 @@ export default function SiteDataTable({
     });
   }, [filteredData, siteMetricsMap]);
 
+ const sortedData = useMemo(() => {
+    const data = [...finalFilteredData];
+    data.sort((a, b) => {
+      const timeA = new Date(a.createdAt).getTime();
+      const timeB = new Date(b.createdAt).getTime();
+      return timestampSortDirection === "desc" ? timeB - timeA : timeA - timeB;
+    });
+    return data;
+  }, [finalFilteredData, timestampSortDirection]);
   // Define the columns to display
   const tableColumns = useMemo((): TableColumn[] => {
     const fixedColumns: TableColumn[] = [
@@ -292,6 +305,10 @@ export default function SiteDataTable({
     timestamp: "w-[180px]",
     siteName: "w-[200px]",
     default: "w-[180px]",
+  };
+
+  const toggleTimestampSort = () => {
+    setTimestampSortDirection((prev) => (prev === "desc" ? "asc" : "desc"));
   };
 
   // Helper function to safely translate site names
@@ -377,9 +394,9 @@ export default function SiteDataTable({
 
   return (
     <div className="h-full flex flex-col">
-      <div className="overflow-hidden md:w-full lg:max-w-[calc(100vw-350px)] max-h-[calc(100vh-150px)] px-2">
+      <div className="h-full overflow-hidden w-full max-w-full px-2">
         {/* Header */}
-        {finalFilteredData.length > 0 && (
+        {sortedData.length > 0 && (
           <div
             ref={headerRef}
             className="overflow-x-auto overflow-y-hidden hide-scrollbar border-b"
@@ -389,15 +406,46 @@ export default function SiteDataTable({
               <table className="table-fixed w-full border-separate border-spacing-0">
                 <thead className="bg-white">
                   <tr>
-                    {tableColumns.map((column) => (
-                      <th
-                        key={column.key}
-                        className="text-center px-4 py-3 text-sm font-semibold text-gray-700 border-b"
-                        style={{ width: "180px", minWidth: "180px" }}
-                      >
-                        {column.label}
-                      </th>
-                    ))}
+                    {tableColumns.map((column) => {
+                      const isTimestamp = column.key === "timestamp";
+                      return (
+                        <th
+                          key={column.key}
+                          className={cn(
+                            "text-center px-4 py-3 text-sm font-semibold text-gray-700 border-b",
+                            isTimestamp ? "cursor-pointer select-none" : ""
+                          )}
+                          style={{ width: "180px", minWidth: "180px" }}
+                          onClick={isTimestamp ? toggleTimestampSort : undefined}
+                        >
+                          {isTimestamp ? (
+                            <div className="flex items-center justify-center gap-2">
+                              <span>{column.label}</span>
+                              <span className="flex flex-col">
+                                <ArrowUp
+                                  className={cn(
+                                    "h-3 w-3 -mb-0.5",
+                                    timestampSortDirection === "asc"
+                                      ? "text-blue3 opacity-100"
+                                      : "text-gray-400 opacity-40"
+                                  )}
+                                />
+                                <ArrowDown
+                                  className={cn(
+                                    "h-3 w-3 -mt-0.5",
+                                    timestampSortDirection === "desc"
+                                      ? "text-blue3 opacity-100"
+                                      : "text-gray-400 opacity-40"
+                                  )}
+                                />
+                              </span>
+                            </div>
+                          ) : (
+                            column.label
+                          )}
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
               </table>
@@ -408,12 +456,12 @@ export default function SiteDataTable({
         {/* Body */}
         <div
           ref={bodyRef}
-          className="overflow-auto max-h-[calc(100vh-240px)] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-300"
+          className="w-full max-w-full h-full overflow-x-auto overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-300"
         >
           <div style={{ minWidth: `${tableColumns.length * 180}px` }}>
             <table className="table-fixed w-full border-separate border-spacing-0">
               <tbody>
-                {finalFilteredData.length === 0 ? (
+                {sortedData.length === 0 ? (
                   <tr>
                     <td
                       colSpan={tableColumns.length}
@@ -423,7 +471,7 @@ export default function SiteDataTable({
                     </td>
                   </tr>
                 ) : (
-                  finalFilteredData.map((row, i) => (
+                  sortedData.map((row, i) => (
                     <tr key={i} className="even:bg-gray-50">
                       {tableColumns.map((column) => {
                         const cellValue = getCellValue(row, column);

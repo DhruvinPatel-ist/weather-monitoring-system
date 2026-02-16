@@ -36,6 +36,7 @@ import {
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { DateRangePicker } from "@/components/PopoverDatePicker";
 
 export default function Dashboard() {
   const t = useTranslations("Dashboard");
@@ -78,6 +79,20 @@ export default function Dashboard() {
   const [selectedTimeframe, setSelectedTimeframe] = useState(
     timeframeOptions[0]
   );
+  const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState<boolean>(false);
+  const [isDateRangePickerOpen, setIsDateRangePickerOpen] = useState<boolean>(false);
+
+  // Date range state for custom date selection
+  const [startDate, setStartDate] = useState<Date>(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 7); // Default to 7 days ago
+    return date;
+  });
+  const [endDate, setEndDate] = useState<Date>(new Date());
+  // Start with custom date range enabled so initial data matches the
+  // DateRangePicker default (last 7 days) instead of "today / yesterday".
+  const [useCustomDateRange, setUseCustomDateRange] = useState(true);
+  const [dateTimeRange, setDateTimeRange] = useState<string>("");
 
   const { data: stationsData = [], isLoading: isStationsLoading } =
     useStations();
@@ -90,46 +105,71 @@ export default function Dashboard() {
   dayjs.extend(utc);
   dayjs.extend(timezone);
 
-  const now = dayjs().tz("Asia/Dubai");
-  let dateTimeRange: string;
+  // Recalculate dateTimeRange only when filters change (not on every render)
+  useEffect(() => {
+    // Custom date range from DateRangePicker
+    if (useCustomDateRange) {
+      // Use pure calendar days from the picker, without timezone shifts,
+      // and always cover the full selected days (00:00:00 → 23:59:00).
+      const start = dayjs(startDate);
+      const end = dayjs(endDate);
+      const fromStr = `${start.format("YYYY-MM-DD")}T00:00:00.000`;
+      const toStr = `${end.format("YYYY-MM-DD")}T23:59:00.000`;
+      setDateTimeRange(`${fromStr}/${toStr}`);
+      return;
+    }
 
-  switch (selectedTimeframe.value) {
-    case "live": {
-      const oneDayAgo = now.subtract(1, "day");
-      dateTimeRange = `${oneDayAgo.format(
-        "YYYY-MM-DDTHH:mm:ss.000"
-      )}/${now.format("YYYY-MM-DDTHH:mm:ss.000")}`;
-      break;
+    // Predefined timeframes based on "now" at the moment of change
+    const now = dayjs().tz("Asia/Dubai");
+    let range = "";
+
+    switch (selectedTimeframe.value) {
+      case "live": {
+        const oneDayAgo = now.subtract(1, "day");
+        range = `${oneDayAgo.format(
+          "YYYY-MM-DDTHH:mm:ss.000"
+        )}/${now.format("YYYY-MM-DDTHH:mm:ss.000")}`;
+        break;
+      }
+      case "lastDay": {
+        const yesterday = now.subtract(1, "day").format("YYYY-MM-DD");
+        range = `${yesterday}T00:00:00.000/${yesterday}T23:59:00.000`;
+        break;
+      }
+      case "lastWeek": {
+        const weekAgo = now.subtract(6, "day");
+        range = `${weekAgo.format(
+          "YYYY-MM-DDTHH:mm:ss.000"
+        )}/${now.format("YYYY-MM-DDTHH:mm:ss.000")}`;
+        break;
+      }
+      case "lastMonth": {
+        const monthAgo = now.subtract(1, "month");
+        range = `${monthAgo.format(
+          "YYYY-MM-DDTHH:mm:ss.000"
+        )}/${now.format("YYYY-MM-DDTHH:mm:ss.000")}`;
+        break;
+      }
+      case "lastYear": {
+        const yearAgo = now.subtract(1, "year");
+        range = `${yearAgo.format(
+          "YYYY-MM-DDTHH:mm:ss.000"
+        )}/${now.format("YYYY-MM-DDTHH:mm:ss.000")}`;
+        break;
+      }
+      default:
+        range = "";
     }
-    case "lastDay": {
-      const yesterday = now.subtract(1, "day").format("YYYY-MM-DD");
-      dateTimeRange = `${yesterday}T00:00:00.000/${yesterday}T23:59:00.000`;
-      break;
-    }
-    case "lastWeek": {
-      const weekAgo = now.subtract(6, "day");
-      dateTimeRange = `${weekAgo.format(
-        "YYYY-MM-DDTHH:mm:ss.000"
-      )}/${now.format("YYYY-MM-DDTHH:mm:ss.000")}`;
-      break;
-    }
-    case "lastMonth": {
-      const monthAgo = now.subtract(1, "month");
-      dateTimeRange = `${monthAgo.format(
-        "YYYY-MM-DDTHH:mm:ss.000"
-      )}/${now.format("YYYY-MM-DDTHH:mm:ss.000")}`;
-      break;
-    }
-    case "lastYear": {
-      const yearAgo = now.subtract(1, "year");
-      dateTimeRange = `${yearAgo.format(
-        "YYYY-MM-DDTHH:mm:ss.000"
-      )}/${now.format("YYYY-MM-DDTHH:mm:ss.000")}`;
-      break;
-    }
-    default:
-      dateTimeRange = "";
-  }
+
+    setDateTimeRange(range);
+  }, [useCustomDateRange, startDate, endDate, selectedTimeframe.value]);
+
+  // Handle date range changes from DateRangePicker
+  const handleDateRangeChange = (start: Date, end: Date) => {
+    setStartDate(start);
+    setEndDate(end);
+    setUseCustomDateRange(true);
+  };
 
   const { data: metrics = [], isLoading: isMetricsLoading } = useMetrics(
     selectedStation?.id,
@@ -275,13 +315,15 @@ export default function Dashboard() {
               isMobileOrTablet ? "justify-between gap-2 w-full" : "gap-2"
             )}
           >
-            <DropdownMenu>
+            <DropdownMenu open={isTimeframeDropdownOpen} onOpenChange={setIsTimeframeDropdownOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
+                  disabled={isDateRangePickerOpen}
                   className={
                     isMobileOrTablet ? "bg-white w-[100px]" : "bg-white"
                   }
+                  onClick={() => setUseCustomDateRange(false)}
                 >
                   {selectedTimeframe.label} <ChevronDown className="h-4 w-4" />
                 </Button>
@@ -290,13 +332,23 @@ export default function Dashboard() {
                 {timeframeOptions.map((option) => (
                   <DropdownMenuItem
                     key={option.value}
-                    onClick={() => setSelectedTimeframe(option)}
+                    onClick={() => {
+                      setSelectedTimeframe(option);
+                      setUseCustomDateRange(false);
+                    }}
                   >
                     {option.label}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+            <DateRangePicker
+              startDate={startDate}
+              endDate={endDate}
+              onDateRangeChange={handleDateRangeChange}
+              disabled={isTimeframeDropdownOpen}
+              onOpenChange={setIsDateRangePickerOpen}
+            />
             {activeView == "table" && (
               <div className="space-x-2">
                 <Select
@@ -325,6 +377,7 @@ export default function Dashboard() {
                 timeframe={selectedTimeframe}
                 selectedStation={selectedStation}
                 className={`${isMobileOrTablet ? "full" : "w-full"}`}
+                dateTimeRange={dateTimeRange}
               />
             )}
           </div>
@@ -352,6 +405,7 @@ export default function Dashboard() {
               selectedStation={selectedStation}
               setSelectedStation={setSelectedStation}
               isMetricsLoading={isMetricsLoading}
+              dateTimeRange={dateTimeRange}
             />
           )}
 
@@ -360,12 +414,14 @@ export default function Dashboard() {
               selectedStation={selectedStation}
               timeframe={selectedTimeframe}
               stations={stations}
+              dateTimeRange={dateTimeRange}
             />
           )}
           {activeView === "threshold" && (
             <ThresholdView
               timeframe={selectedTimeframe.value}
               stations={stations}
+              dateTimeRange={dateTimeRange}
             />
           )}
         </div>

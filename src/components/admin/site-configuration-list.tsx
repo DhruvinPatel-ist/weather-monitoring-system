@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Plus, X } from "lucide-react";
+import { Plus, X, ArrowUp, ArrowDown } from "lucide-react";
 
 import {
   ConfirmDeleteModal,
@@ -337,7 +337,22 @@ export default function SiteConfiguration({
   }, [page]);
 
   const startIndex = (currentPage - 1) * perPage;
-  const paginatedRows = rows.slice(startIndex, startIndex + perPage);
+  const [createdSortDirection, setCreatedSortDirection] = useState<
+    "asc" | "desc"
+  >("desc");
+  const sortedRows = useMemo(() => {
+    const copy = [...rows];
+    copy.sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return createdSortDirection === "desc" ? bTime - aTime : aTime - bTime;
+    });
+    return copy;
+  }, [rows, createdSortDirection]);
+  const paginatedRows = sortedRows.slice(startIndex, startIndex + perPage);
+  const toggleCreatedSort = () => {
+    setCreatedSortDirection((prev) => (prev === "desc" ? "asc" : "desc"));
+  };
 
   return (
     <div className="p-2">
@@ -384,8 +399,29 @@ export default function SiteConfiguration({
                 <th className="px-4 py-3">
                   {t("connectionType") || "Connection Type"}
                 </th>
-                <th className="px-4 py-3">
-                  {t("createdDate") || "Created Date"}
+                <th
+                  className="px-4 py-3 cursor-pointer select-none"
+                  onClick={toggleCreatedSort}
+                >
+                  <div className="flex items-center gap-1">
+                    <span>{t("createdDate") || "Created Date"}</span>
+                    <span className="flex flex-col">
+                      <ArrowUp
+                        className={`h-3 w-3 -mb-0.5 ${
+                          createdSortDirection === "asc"
+                            ? "text-blue3 opacity-100"
+                            : "text-gray-400 opacity-40"
+                        }`}
+                      />
+                      <ArrowDown
+                        className={`h-3 w-3 -mt-0.5 ${
+                          createdSortDirection === "desc"
+                            ? "text-blue3 opacity-100"
+                            : "text-gray-400 opacity-40"
+                        }`}
+                      />
+                    </span>
+                  </div>
                 </th>
                 <th className="px-4 py-3">{t("statusType") || "Status"}</th>
                 <th className="px-4 py-3 text-center">

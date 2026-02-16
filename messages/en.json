@@ -399,7 +399,9 @@
     "selectSites": "Select site(s)",
     "selectTimeframe": "Select Timeframe",
     "moreSites": "more",
-    "timeframe": "Timeframe"
+    "timeframe": "Timeframe",
+    "selectParameters": "Select Parameters",
+    "loadingParameter": "Loading Parameter..."
   },
   "StationsList": {
     "listOfStations": "List of Stations",

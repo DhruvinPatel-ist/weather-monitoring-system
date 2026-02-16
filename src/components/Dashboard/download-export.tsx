@@ -24,6 +24,7 @@ type DownloadReportComponentProps = {
   className?: string;
   selectedStation: Station | null;
   timeframe: any;
+  dateTimeRange?: string;
 };
 
 type ReportFormat = {
@@ -36,6 +37,7 @@ export default function DownloadReportComponent({
   selectedStation,
   timeframe,
   className,
+  dateTimeRange: propDateTimeRange,
 }: DownloadReportComponentProps) {
   const t = useTranslations("");
   const [open, setOpen] = useState(false);
@@ -55,45 +57,60 @@ export default function DownloadReportComponent({
   dayjs.extend(utc);
   dayjs.extend(timezone);
 
-  const now = dayjs().tz("Asia/Dubai");
-  let fromDateString: string;
-  let toDateStrring: string;
+  const { fromDateString, toDateStrring } = (() => {
+    if (propDateTimeRange) {
+      const [start, end] = propDateTimeRange.split("/");
+      return {
+        fromDateString: start || "",
+        toDateStrring: end || "",
+      };
+    }
 
-  switch (timeframe.value) {
-    case "live":
-      const oneDayAgo = now.subtract(1, "day");
-      fromDateString = oneDayAgo.format("YYYY-MM-DDTHH:mm:ss.000");
-      toDateStrring = now.format("YYYY-MM-DDTHH:mm:ss.000");
-      break;
+    const now = dayjs().tz("Asia/Dubai");
+    let from = "";
+    let to = "";
 
-    case "lastDay":
-      const yesterday = now.subtract(1, "day").format("YYYY-MM-DD");
-      fromDateString = `${yesterday}T00:00:00.000`;
-      toDateStrring = `${yesterday}T23:59:00.000`;
-      break;
+    switch (timeframe.value) {
+      case "live":
+        const oneDayAgo = now.subtract(1, "day");
+        from = oneDayAgo.format("YYYY-MM-DDTHH:mm:ss.000");
+        to = now.format("YYYY-MM-DDTHH:mm:ss.000");
+        break;
 
-    case "lastWeek":
-      const weekAgo = now.subtract(6, "day");
-      fromDateString = weekAgo.format("YYYY-MM-DDTHH:mm:ss.000");
-      toDateStrring = now.format("YYYY-MM-DDTHH:mm:ss.000");
-      break;
+      case "lastDay":
+        const yesterday = now.subtract(1, "day").format("YYYY-MM-DD");
+        from = `${yesterday}T00:00:00.000`;
+        to = `${yesterday}T23:59:00.000`;
+        break;
 
-    case "lastMonth":
-      const monthAgo = now.subtract(1, "month");
-      fromDateString = monthAgo.format("YYYY-MM-DDTHH:mm:ss.000");
-      toDateStrring = now.format("YYYY-MM-DDTHH:mm:ss.000");
-      break;
+      case "lastWeek":
+        const weekAgo = now.subtract(6, "day");
+        from = weekAgo.format("YYYY-MM-DDTHH:mm:ss.000");
+        to = now.format("YYYY-MM-DDTHH:mm:ss.000");
+        break;
 
-    case "lastYear":
-      const yearAgo = now.subtract(1, "year");
-      fromDateString = yearAgo.format("YYYY-MM-DDTHH:mm:ss.000");
-      toDateStrring = now.format("YYYY-MM-DDTHH:mm:ss.000");
-      break;
+      case "lastMonth":
+        const monthAgo = now.subtract(1, "month");
+        from = monthAgo.format("YYYY-MM-DDTHH:mm:ss.000");
+        to = now.format("YYYY-MM-DDTHH:mm:ss.000");
+        break;
 
-    default:
-      fromDateString = "";
-      toDateStrring = "";
-  }
+      case "lastYear":
+        const yearAgo = now.subtract(1, "year");
+        from = yearAgo.format("YYYY-MM-DDTHH:mm:ss.000");
+        to = now.format("YYYY-MM-DDTHH:mm:ss.000");
+        break;
+
+      default:
+        from = "";
+        to = "";
+    }
+
+    return {
+      fromDateString: from,
+      toDateStrring: to,
+    };
+  })();
 
   // Fetch parameters for selected station
   const { data: parameters = [], isLoading: isLoadingParams } =

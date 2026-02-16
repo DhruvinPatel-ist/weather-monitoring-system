@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { UserFormModal } from "@/components/admin/form/user-form-modal";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,6 +18,7 @@ import {
 import { useTranslations } from "next-intl";
 import PaginationControls from "@/hooks/shared/PaginationControls";
 import { toast } from "sonner";
+import { ArrowUp, ArrowDown } from "lucide-react";
 
 interface UserManagementPageProps {
   page: number;
@@ -47,6 +48,9 @@ export default function UserManagementPage({
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(page);
+  const [createdSortDirection, setCreatedSortDirection] = useState<
+    "asc" | "desc"
+  >("desc");
 
   useEffect(() => {
     setCurrentPage(page);
@@ -57,7 +61,22 @@ export default function UserManagementPage({
   }, [users, setTotalItems]);
 
   const startIndex = (currentPage - 1) * perPage;
-  const paginatedUsers = users.slice(startIndex, startIndex + perPage);
+
+  const sortedUsers = useMemo(() => {
+    const copy = [...users];
+    copy.sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return createdSortDirection === "desc" ? bTime - aTime : aTime - bTime;
+    });
+    return copy;
+  }, [users, createdSortDirection]);
+
+  const paginatedUsers = sortedUsers.slice(startIndex, startIndex + perPage);
+
+  const toggleCreatedSort = () => {
+    setCreatedSortDirection((prev) => (prev === "desc" ? "asc" : "desc"));
+  };
 
   const handleOpenModal = (mode: "create" | "edit", user?: UserData) => {
     setModalMode(mode);
@@ -165,8 +184,29 @@ export default function UserManagementPage({
                   {t("organization")}
                 </th>
                 <th className="px-3 md:px-4 py-3 text-center">{t("role")}</th>
-                <th className="px-3 md:px-4 py-3 text-center">
-                  {t("createdDate")}
+                <th
+                  className="px-3 md:px-4 py-3 text-center cursor-pointer select-none"
+                  onClick={toggleCreatedSort}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <span>{t("createdDate")}</span>
+                    <span className="flex flex-col">
+                      <ArrowUp
+                        className={`h-3 w-3 -mb-0.5 ${
+                          createdSortDirection === "asc"
+                            ? "text-blue3 opacity-100"
+                            : "text-gray-400 opacity-40"
+                        }`}
+                      />
+                      <ArrowDown
+                        className={`h-3 w-3 -mt-0.5 ${
+                          createdSortDirection === "desc"
+                            ? "text-blue3 opacity-100"
+                            : "text-gray-400 opacity-40"
+                        }`}
+                      />
+                    </span>
+                  </div>
                 </th>
                 <th className="px-3 md:px-4 py-3 text-center">{t("status")}</th>
                 <th className="px-3 md:px-4 py-3 text-center">

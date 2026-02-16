@@ -66,6 +66,7 @@ interface ParameterViewProps {
   setSelectedStation: (station: Station) => void;
   stations: Station[];
   isMetricsLoading: boolean;
+  dateTimeRange?: string;
   metrics: {
     id: MetricType;
     title: string;
@@ -106,6 +107,7 @@ export default function ParameterView({
   metrics,
   selectedStation,
   setSelectedStation,
+  dateTimeRange,
 }: ParameterViewProps) {
   const t = useTranslations("Dashboard");
   const locale = useLocale();
@@ -661,6 +663,7 @@ export default function ParameterView({
                             chartConfig={chartConfig}
                             stationId={selectedStation?.id || ""}
                             parameterID={metric.ParameterID}
+                            dateTimeRange={dateTimeRange}
                           />
                         ) : (
                           <Skeleton className="w-full h-full rounded-xl" />
@@ -683,6 +686,8 @@ export default function ParameterView({
               stations={stations}
               onSelectStation={setSelectedStation}
               isChartLoading={isMetricsLoading}
+              timeframe={timeframe}
+              dateTimeRange={dateTimeRange}
             />
           </div>
         </div>

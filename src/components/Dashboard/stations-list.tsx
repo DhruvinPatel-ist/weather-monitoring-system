@@ -25,6 +25,8 @@ interface StationsListProps {
   onSelectStation: (station: Station) => void;
   selectedStation: Station | null;
   setSelectedStation: (station: Station) => void;
+  timeframe: any;
+  dateTimeRange?: string;
 }
 
 export default function StationsList({
@@ -32,6 +34,8 @@ export default function StationsList({
   setSelectedStation,
   stations,
   onSelectStation,
+  timeframe,
+  dateTimeRange,
 }: StationsListProps) {
   const locale = useLocale();
   const isRTL = locale === "ar";
@@ -128,18 +132,11 @@ export default function StationsList({
 
 
 
-  const now = dayjs().tz("Asia/Dubai");
-  const oneDayAgo = now.subtract(1, "day");
-
-  const dateTimeRange = `${oneDayAgo.format(
-    "YYYY-MM-DD[T]HH:mm:ss.SSS"
-  )}/${now.format("YYYY-MM-DD[T]HH:mm:ss.SSS")}`;
-
   // Fetch metrics for the selected station - this will be used in enlarged map
   const { data: metrics = [] } = useMetrics(
     selectedStation?.id,
-    "live",
-    dateTimeRange
+    timeframe?.value || "live",
+    dateTimeRange || ""
   ) as unknown as {
     data: {
       id: MetricType;

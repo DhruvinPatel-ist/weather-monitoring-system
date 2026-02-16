@@ -7,6 +7,7 @@ import { useDeviceDetection } from "@/hooks/useDeviceDetection";
 import { useTranslations, useMessages } from "next-intl";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Drawer,
   DrawerTrigger,
@@ -71,6 +72,7 @@ export default function MetricsPanel({
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [openPanels, setOpenPanels] = useState<Set<string>>(new Set());
   const [loadingParams, setLoadingParams] = useState(false);
+  const [metricSearch, setMetricSearch] = useState("");
 
   // Parameters grouped by SiteID
   const [paramsBySiteId, setParamsBySiteId] = useState<
@@ -101,6 +103,19 @@ export default function MetricsPanel({
   const translateStationName = (raw: string) =>
     hasKeyInStationsList(raw) ? sl(raw) : raw;
   // ---------------------------------------------------------------
+
+  const normalizeSearch = (value: string) => value.trim().toLowerCase();
+  const filterParamsBySearch = (params: ParameterRow[]) => {
+    const query = normalizeSearch(metricSearch);
+    if (!query) return params;
+
+    return params.filter((p) => {
+      const label = p.UnitName
+        ? `${p.ParameterName} (${p.UnitName})`
+        : p.ParameterName;
+      return label.toLowerCase().includes(query);
+    });
+  };
 
   // Fetch parameters dynamically whenever the selected site IDs change
   useEffect(() => {
@@ -176,13 +191,20 @@ export default function MetricsPanel({
     }));
   };
 
-  const toggleAllForSite = (siteId: string) => {
-    const params = paramsBySiteId[siteId] || [];
+  const toggleAllForSite = (siteId: string, visibleParams: ParameterRow[]) => {
     const current = siteMetricsMap[siteId] || {};
-    const allChecked = params.every((p) => current[p.ParameterID]);
-    const next: Record<number, boolean> = {};
-    for (const p of params) next[p.ParameterID] = !allChecked;
-    setSiteMetricsMap((prev: any) => ({ ...prev, [siteId]: next }));
+    const allVisibleChecked = visibleParams.length > 0 &&
+      visibleParams.every((p) => current[p.ParameterID]);
+    setSiteMetricsMap((prev: any) => {
+      const updated = { ...prev };
+      if (!updated[siteId]) updated[siteId] = {};
+      const next = { ...updated[siteId] };
+      for (const p of visibleParams) {
+        next[p.ParameterID] = !allVisibleChecked;
+      }
+      
+      return { ...updated, [siteId]: next };
+    });
   };
 
   const resetAllMetrics = () => {
@@ -195,6 +217,146 @@ export default function MetricsPanel({
   useEffect(() => {
     if (selectedSiteNames.length === 0) resetAllMetrics();
   }, [selectedSiteNames.length]);
+
+ const [lastSelectedMetricKeys, setLastSelectedMetricKeys] = useState<string[]>([]);
+ useEffect(() => {
+    const handleMetricSelected = (event: CustomEvent) => {
+      const { metricKeys, metricIds } = event.detail || {};
+      const buildKey = (p: ParameterRow) =>
+        `${p.ParameterName}__${p.UnitName || ""}`;
+      if (metricKeys && Array.isArray(metricKeys)) {
+        setLastSelectedMetricKeys(metricKeys);
+      }
+      setSiteMetricsMap((prev: any) => {
+        const updated = { ...prev };
+
+        if (metricKeys && Array.isArray(metricKeys)) {
+          selectedSiteIds.forEach((siteId) => {
+            const siteParams = paramsBySiteId[siteId] || [];
+            if (!updated[siteId]) updated[siteId] = {};
+
+            siteParams.forEach((p) => {
+              const key = buildKey(p);
+              if (metricKeys.includes(key)) {
+                updated[siteId][p.ParameterID] = true;
+              } else if (updated[siteId][p.ParameterID]) {
+                updated[siteId][p.ParameterID] = false;
+              }
+            });
+          });
+          return updated;
+        }
+
+        if (metricIds && Array.isArray(metricIds)) {
+          const allAvailableMetricIds = new Set<number>();
+          Object.values(paramsBySiteId).forEach((params) => {
+            params.forEach((p) => allAvailableMetricIds.add(p.ParameterID));
+          });
+
+          selectedSiteIds.forEach((siteId) => {
+            if (!updated[siteId]) updated[siteId] = {};
+            allAvailableMetricIds.forEach((metricId) => {
+              if (metricIds.includes(metricId)) {
+                updated[siteId][metricId] = true;
+              } else if (updated[siteId][metricId]) {
+                updated[siteId][metricId] = false;
+              }
+            });
+          });
+        }
+
+        return updated;
+      });
+    };
+
+    window.addEventListener(
+      "metricSelected",
+      handleMetricSelected as EventListener
+    );
+    return () => {
+      window.removeEventListener(
+        "metricSelected",
+        handleMetricSelected as EventListener
+      );
+    };
+  }, [selectedSiteIds, paramsBySiteId, setSiteMetricsMap]);
+
+  useEffect(() => {
+    if (selectedSiteIds.length === 0 || lastSelectedMetricKeys.length === 0 || Object.keys(paramsBySiteId).length === 0) {
+      return;
+    }
+
+   const buildKey = (p: ParameterRow) =>
+      `${p.ParameterName}__${p.UnitName || ""}`;
+
+    setSiteMetricsMap((prev: any) => {
+      const updated = { ...prev };
+      let hasChanges = false;
+
+     selectedSiteIds.forEach((siteId) => {
+        const siteParams = paramsBySiteId[siteId] || [];
+        if (!siteParams.length) return;
+
+        if (!updated[siteId]) {
+          updated[siteId] = {};
+        }
+
+        siteParams.forEach((p) => {
+          const key = buildKey(p);
+          if (lastSelectedMetricKeys.includes(key)) {
+            // Only update if not already selected to avoid unnecessary re-renders
+            if (!updated[siteId][p.ParameterID]) {
+              updated[siteId][p.ParameterID] = true;
+              hasChanges = true;
+            }
+          }
+        });
+      });
+
+      return hasChanges ? updated : prev;
+    });
+  }, [selectedSiteIds, paramsBySiteId, lastSelectedMetricKeys, setSiteMetricsMap]);
+
+  useEffect(() => {
+    if (
+      selectedSiteIds.length === 0 ||
+      Object.keys(paramsBySiteId).length === 0 ||
+      Object.keys(siteMetricsMap).length === 0
+    ) {
+      return;
+    }
+
+    const buildKey = (p: ParameterRow) =>
+      `${p.ParameterName}__${p.UnitName || ""}`;
+
+    const metricKeyToSelectedSites = new Map<string, Set<string>>();
+
+    selectedSiteIds.forEach((siteId) => {
+      const siteParams = paramsBySiteId[siteId] || [];
+      const siteSelections = siteMetricsMap[siteId] || {};
+
+      siteParams.forEach((p) => {
+        if (!siteSelections[p.ParameterID]) return;
+        const key = buildKey(p);
+        if (!metricKeyToSelectedSites.has(key)) {
+          metricKeyToSelectedSites.set(key, new Set<string>());
+        }
+        metricKeyToSelectedSites.get(key)!.add(siteId);
+      });
+    });
+
+    // Metrics selected in ALL currently selected sites
+    const globallySelectedMetricKeys = Array.from(
+      metricKeyToSelectedSites.entries()
+    )
+      .filter(([, sitesSet]) => sitesSet.size === selectedSiteIds.length)
+      .map(([key]) => key);
+
+    const sidebarEvent = new CustomEvent("metricsSidebarChanged", {
+      detail: { metricKeys: globallySelectedMetricKeys },
+    });
+    window.dispatchEvent(sidebarEvent);
+  }, [siteMetricsMap, selectedSiteIds, paramsBySiteId]);
 
   useEffect(() => {
     if (selectedTimeframe || startDate || endDate) {
@@ -267,14 +429,25 @@ export default function MetricsPanel({
     return (
       <div className="flex flex-col space-y-4 mb-3">
         <div className="w-60 min-h-[50px] max-h-[750px] overflow-y-auto rounded-md border bg-white p-2 space-y-4">
+          <div className="px-1 pt-1">
+            <Input
+              type="text"
+              value={metricSearch}
+              onChange={(e) => setMetricSearch(e.target.value)}
+              placeholder="Search metrics..."
+              className="h-8 text-xs"
+            />
+          </div>
+
           {selectedSiteIds.map((siteId, idx) => {
             const siteName = displaySiteName(siteId, idx);
             const isOpen = openPanels.has(siteId);
             const selectedForSite = siteMetricsMap[siteId] || {};
             const params = paramsBySiteId[siteId] || [];
+            const visibleParams = filterParamsBySearch(params);
             const allChecked =
-              params.length > 0 &&
-              params.every((p) => selectedForSite[p.ParameterID]);
+              visibleParams.length > 0 &&
+              visibleParams.every((p) => selectedForSite[p.ParameterID]);
 
             return (
               <div key={siteId}>
@@ -302,9 +475,9 @@ export default function MetricsPanel({
                       <Checkbox
                         id={`${siteId}-selectAll`}
                         checked={allChecked}
-                        onCheckedChange={() => toggleAllForSite(siteId)}
+                        onCheckedChange={() => toggleAllForSite(siteId, visibleParams)}
                         className={allChecked ? "bg-primary border-blue1" : ""}
-                        disabled={loadingParams || params.length === 0}
+                        disabled={loadingParams || visibleParams.length === 0}
                       />
                       <label
                         htmlFor={`${siteId}-selectAll`}
@@ -320,7 +493,7 @@ export default function MetricsPanel({
                       </div>
                     )}
 
-                    {params.map((p) => {
+                    {visibleParams.map((p) => {
                       const label = p.UnitName
                         ? `${p.ParameterName} (${p.UnitName})`
                         : p.ParameterName;
@@ -375,13 +548,24 @@ export default function MetricsPanel({
   return (
     <div className="flex flex-col space-y-2 w-full">
       <div className="min-h-[40px] max-h-[580px] overflow-y-auto rounded-md bg-white border p-1 space-y-2 w-full">
+        <div className="px-1 pt-1">
+          <Input
+            type="text"
+            value={metricSearch}
+            onChange={(e) => setMetricSearch(e.target.value)}
+            placeholder="Search metrics..."
+            className="h-9 text-sm"
+          />
+        </div>
+
         {selectedSiteIds.map((siteId, idx) => {
           const siteName = displaySiteName(siteId, idx);
           const selectedForSite = siteMetricsMap[siteId] || {};
           const params = paramsBySiteId[siteId] || [];
+          const visibleParams = filterParamsBySearch(params);
           const allChecked =
-            params.length > 0 &&
-            params.every((p) => selectedForSite[p.ParameterID]);
+            visibleParams.length > 0 &&
+            visibleParams.every((p) => selectedForSite[p.ParameterID]);
 
           return (
             <Drawer
@@ -410,9 +594,9 @@ export default function MetricsPanel({
                     <Checkbox
                       id={`${siteId}-selectAll`}
                       checked={allChecked}
-                      onCheckedChange={() => toggleAllForSite(siteId)}
+                      onCheckedChange={() => toggleAllForSite(siteId, visibleParams)}
                       className={allChecked ? "bg-primary border-blue1" : ""}
-                      disabled={loadingParams || params.length === 0}
+                      disabled={loadingParams || visibleParams.length === 0}
                     />
                     <label
                       htmlFor={`${siteId}-selectAll`}
@@ -428,7 +612,7 @@ export default function MetricsPanel({
                     </div>
                   )}
 
-                  {params.map((p) => {
+                  {visibleParams.map((p) => {
                     const label = p.UnitName
                       ? `${p.ParameterName} (${p.UnitName})`
                       : p.ParameterName;

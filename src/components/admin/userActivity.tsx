@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import PaginationControls from "@/hooks/shared/PaginationControls";
 import { DateRangePicker } from "../PopoverDatePicker";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown, X, ArrowUp, ArrowDown } from "lucide-react";
 import { userActivityService } from "@/services/userService";
 import { Skeleton } from "@/components/ui/skeleton";
 import * as XLSX from "xlsx";
@@ -41,6 +41,7 @@ export default function UserActivity({
   const [activityLogs, setActivityLogs] = useState<UserLog[]>([]);
   const [filteredLogs, setFilteredLogs] = useState<UserLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [dateTimeSortDirection, setDateTimeSortDirection] = useState<"asc" | "desc">("desc");
   const [dateRange, setDateRange] = useState<{
     start: Date | null;
     end: Date | null;
@@ -114,9 +115,39 @@ export default function UserActivity({
     setTotalItems?.(filteredLogs.length);
   }, [filteredLogs, setTotalItems]);
 
+  // Sort filtered logs by datetime
+  const sortedLogs = useMemo(() => {
+    const copy = [...filteredLogs];
+    copy.sort((a, b) => {
+      // Parse datetime string (format: "DD/MM/YYYY HH:MM:SS")
+      const parseDateTime = (dt: string): number => {
+        const [datePart, timePart] = dt.split(" ");
+        if (!datePart || !timePart) return 0;
+        const [day, month, year] = datePart.split("/");
+        const [hour, minute, second] = timePart.split(":");
+        return new Date(
+          parseInt(year),
+          parseInt(month) - 1,
+          parseInt(day),
+          parseInt(hour),
+          parseInt(minute),
+          parseInt(second)
+        ).getTime();
+      };
+      const aTime = parseDateTime(a.datetime);
+      const bTime = parseDateTime(b.datetime);
+      return dateTimeSortDirection === "desc" ? bTime - aTime : aTime - bTime;
+    });
+    return copy;
+  }, [filteredLogs, dateTimeSortDirection]);
+
   const start = (page - 1) * perPage;
   const end = start + perPage;
-  const currentPageData = filteredLogs.slice(start, end);
+  const currentPageData = sortedLogs.slice(start, end);
+
+  const toggleDateTimeSort = () => {
+    setDateTimeSortDirection((prev) => (prev === "desc" ? "asc" : "desc"));
+  };
   const handleDateRangeChange = (start: Date, end: Date) => {
     if (!start || !end) return; // Don't apply filter if dates are not selected
 
@@ -303,7 +334,30 @@ export default function UserActivity({
                   </div>
                 </th>
                 <th className="px-3 md:px-4 py-3 text-center">{t("Email")}</th>
-                <th className="px-3 md:px-4 py-3 text-center">{t("DateTime")}</th>
+                <th 
+                  className="px-3 md:px-4 py-3 text-center cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={toggleDateTimeSort}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    {t("DateTime")}
+                    <div className="flex flex-col">
+                      <ArrowUp 
+                        className={`h-3 w-3 ${
+                          dateTimeSortDirection === "asc" 
+                            ? "text-blue3 opacity-100" 
+                            : "text-gray-400 opacity-30"
+                        }`} 
+                      />
+                      <ArrowDown 
+                        className={`h-3 w-3 -mt-1 ${
+                          dateTimeSortDirection === "desc" 
+                            ? "text-blue3 opacity-100" 
+                            : "text-gray-400 opacity-30"
+                        }`} 
+                      />
+                    </div>
+                  </div>
+                </th>
                 <th className="px-3 md:px-4 py-3 text-center">{t("IPAddress")}</th>
                 <th className="px-3 md:px-4 py-3 text-center">{t("Activity")}</th>
               </tr>

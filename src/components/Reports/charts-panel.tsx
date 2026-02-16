@@ -4,7 +4,7 @@ import { useDeviceDetection } from "@/hooks/useDeviceDetection";
 import ChartCard from "@/components/Reports/charts/ChartCard";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations, useMessages } from "next-intl";
 import { ParameterService, Parameter } from "@/services/parameterService";
 
 interface GeneratedDataItem {
@@ -160,6 +160,8 @@ export default function ChartsPanel({
   const t = useTranslations("Dashboard");
   // const commonT = useTranslations("Common");
   const reportsT = useTranslations("Reports");
+  const sl = useTranslations("StationsList");
+  const messages = useMessages() as Record<string, any>;
 
   // Fetch parameters metadata
   useEffect(() => {
@@ -212,7 +214,17 @@ export default function ChartsPanel({
 
   // Helper function to safely translate site names
   const getTranslatedSiteName = (siteName: string) => {
-    return siteName;
+    const hasKeyInStationsList = (key: string) => {
+      const ns = messages?.StationsList as Record<string, any> | undefined;
+      return (
+        !!ns &&
+        Object.prototype.hasOwnProperty.call(ns, key) &&
+        ns[key] != null &&
+        String(ns[key]).length > 0
+      );
+    };
+    if (!siteName) return "Unknown Station";
+    return hasKeyInStationsList(siteName) ? sl(siteName) : siteName;
   };
 
   // Get unique site and parameter combinations for filtering
@@ -321,6 +333,13 @@ export default function ChartsPanel({
     isSingleChartEnabled,
     renderCharts: !loading && filteredData.length > 0,
   });
+  const siteLegend =
+    isSingleChartEnabled && filteredData.length > 0
+      ? getUniqueSiteNames().map((siteName, index) => ({
+          label: getTranslatedSiteName(siteName),
+          color: `hsl(${(index * 67) % 360}, 70%, 50%)`,
+        }))
+      : [];
 
   return (
     <div className="space-y-6 max-h-[calc(100vh-165px)] overflow-y-auto pr-2">
@@ -339,36 +358,53 @@ export default function ChartsPanel({
       {!loading && filteredData.length > 0 && (
         <>
           {isSingleChartEnabled ? (
-            // Single chart mode - group by parameter
-            <div
-              className={`grid gap-6 ${
-                isMobileOrTablet ? "grid-cols-1" : "grid-cols-2"
-              }`}
-            >
-              {getUniqueParameterNames().map((parameterName) => {
-                const parameterData = filteredData.filter(
-                  (item) => item.parameterName === parameterName
-                );
-                if (parameterData.length === 0) return null;
+            // Single chart mode - shared legend below tabs, charts per parameter
+            <>
+              {siteLegend.length > 0 && (
+                <div className="flex flex-wrap items-center gap-3 mb-4 text-xs text-gray-600">
+                  {siteLegend.map((item) => (
+                    <div key={item.label} className="flex items-center gap-1">
+                      <span
+                        className="inline-block w-3 h-3 rounded-sm border border-gray-300"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="truncate max-w-[160px]">
+                        {item.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div
+                className={`grid gap-6 ${
+                  isMobileOrTablet ? "grid-cols-1" : "grid-cols-2"
+                }`}
+              >
+                {getUniqueParameterNames().map((parameterName) => {
+                  const parameterData = filteredData.filter(
+                    (item) => item.parameterName === parameterName
+                  );
+                  if (parameterData.length === 0) return null;
 
-                // Create multi-series data for this parameter
-                const multiSeries = parameterData.map((item) => ({
-                  siteName: getTranslatedSiteName(item.siteName),
-                  data: item.data,
-                }));
+                  // Create multi-series data for this parameter
+                  const multiSeries = parameterData.map((item) => ({
+                    siteName: getTranslatedSiteName(item.siteName),
+                    data: item.data,
+                  }));
 
-                return (
-                  <ChartCard
-                    key={parameterName}
-                    label={`${parameterName} (${
-                      parameterData[0]?.unitName || ""
-                    })`}
-                    color="#4693f1"
-                    multiSeries={multiSeries}
-                  />
-                );
-              })}
-            </div>
+                  return (
+                    <ChartCard
+                      key={parameterName}
+                      label={`${parameterName} (${
+                        parameterData[0]?.unitName || ""
+                      })`}
+                      color="#4693f1"
+                      multiSeries={multiSeries}
+                    />
+                  );
+                })}
+              </div>
+            </>
           ) : (
             // Multiple chart mode - group by site
             getUniqueSiteNames().map((siteName) => {
@@ -395,6 +431,7 @@ export default function ChartsPanel({
                         label={`${item.parameterName} (${item.unitName})`}
                         color="#4693f1"
                         data={item.data}
+                        stationName={translatedSiteName}
                       />
                     ))}
                   </div>

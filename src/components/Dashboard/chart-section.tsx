@@ -127,6 +127,7 @@ interface ChartSectionProps {
       }>;
   preferParentData?: boolean;
   parameterID?: number;
+  dateTimeRange?: string;
 }
 
 export default function ChartSection({
@@ -137,6 +138,7 @@ export default function ChartSection({
   parentData,
   preferParentData = false,
   parameterID,
+  dateTimeRange: propDateTimeRange,
 }: ChartSectionProps) {
   const [loading, setLoading] = useState(true);
   const [chartData, setChartData] = useState<any[]>([]);
@@ -151,6 +153,13 @@ export default function ChartSection({
 
   /* -------------------- date range (memoized) -------------------- */
   const { fromDateString, toDateString } = useMemo(() => {
+    if (propDateTimeRange) {
+      const [start, end] = propDateTimeRange.split("/");
+      return {
+        fromDateString: start || "",
+        toDateString: end || "",
+      };
+    }
     const now = dayjs().tz("Asia/Dubai");
     let from = "";
     let to = "";
@@ -189,8 +198,11 @@ export default function ChartSection({
         from = "";
         to = "";
     }
-    return { fromDateString: from, toDateString: to };
-  }, [timeframe?.value]);
+    return {
+      fromDateString: from,
+      toDateString: to,
+    };
+  }, [timeframe?.value, propDateTimeRange]);
 
   /* -------------------- choose effective attribute -------------------- */
   const effectiveAttribute =

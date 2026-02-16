@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState } from "react";
 import {
   Table,
   TableBody,
@@ -17,11 +17,13 @@ import { useStationParameters } from "@/hooks/useParameters";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { ArrowUp, ArrowDown } from "lucide-react";
 
 interface TableViewProps {
   stations: Station[];
   selectedStation: Station | null;
   timeframe: any;
+  dateTimeRange?: string;
 }
 
 // Memoized format function to avoid recreation
@@ -36,8 +38,10 @@ const formatUTCString = (dateString: string): string => {
 export default function TableView({
   timeframe,
   selectedStation,
+  dateTimeRange: propDateTimeRange,
 }: TableViewProps) {
   const t = useTranslations("Dashboard");
+  const [dateSortDirection, setDateSortDirection] = useState<"asc" | "desc">("desc");
 
   // Initialize dayjs plugins outside of component or use static initialization
   dayjs.extend(utc);
@@ -49,6 +53,9 @@ export default function TableView({
 
   // Memoize date range calculation
   const dateTimeRange = useMemo(() => {
+    if (propDateTimeRange) {
+      return propDateTimeRange;
+    }
     const now = dayjs().tz("Asia/Dubai");
 
     switch (timeframe.value) {
@@ -83,7 +90,7 @@ export default function TableView({
       default:
         return "";
     }
-  }, [timeframe.value]);
+  }, [timeframe.value, propDateTimeRange]);
 
   const { data: tableData, isLoading } = useTableData(
     selectedStation?.id,
@@ -139,9 +146,9 @@ export default function TableView({
     return Object.values(groupedByTimestamp).sort((a: any, b: any) => {
       const dateA = new Date(a.CreatedAt).getTime();
       const dateB = new Date(b.CreatedAt).getTime();
-      return dateB - dateA; // descending order: latest first
+      return dateSortDirection === "desc" ? dateB - dateA : dateA - dateB;
     });
-  }, [tableData, stationParameters, parameterMap, selectedStation?.name]);
+  }, [tableData, stationParameters, parameterMap, selectedStation?.name, dateSortDirection]);
 
   // Dynamic table headers based on parameters
   const tableHeaders = useMemo(() => {
@@ -166,6 +173,10 @@ export default function TableView({
     return "--";
   }, []);
 
+  const handleDateSort = useCallback(() => {
+    setDateSortDirection((prev) => (prev === "desc" ? "asc" : "desc"));
+  }, []);
+
   // Memoize station name
   const stationName = selectedStation?.name || "N/A";
 
@@ -183,8 +194,29 @@ export default function TableView({
                 <Table className="min-w-full text-left">
                   <TableHeader className="sticky top-0 bg-white border-b z-10">
                     <TableRow>
-                      <TableHead className="min-w-[150px] px-4 py-2 whitespace-nowrap font-semibold text-center">
-                        {t("Date")}
+                      <TableHead 
+                        className="min-w-[150px] px-4 py-2 whitespace-nowrap font-semibold text-center cursor-pointer hover:bg-gray-100 select-none"
+                        onClick={handleDateSort}
+                      >
+                        <div className="flex items-center justify-center gap-2">
+                          {t("Date")}
+                          <div className="flex flex-col">
+                            <ArrowUp 
+                              className={`h-3 w-3 ${
+                                dateSortDirection === "asc" 
+                                  ? "text-blue3 opacity-100" 
+                                  : "text-gray-400 opacity-30"
+                              }`} 
+                            />
+                            <ArrowDown 
+                              className={`h-3 w-3 -mt-1 ${
+                                dateSortDirection === "desc" 
+                                  ? "text-blue3 opacity-100" 
+                                  : "text-gray-400 opacity-30"
+                              }`} 
+                            />
+                          </div>
+                        </div>
                       </TableHead>
                       <TableHead className="min-w-[150px] px-4 py-2 whitespace-nowrap font-semibold text-center">
                         {t("Station Name")}

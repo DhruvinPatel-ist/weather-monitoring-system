@@ -26,6 +26,8 @@ interface DateRangePickerProps {
   endDate?: Date;
   onDateRangeChange?: (start: Date, end: Date) => void;
   className?: string;
+  disabled?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function DateRangePicker({
@@ -33,6 +35,8 @@ export function DateRangePicker({
   endDate = new Date(),
   onDateRangeChange,
   className,
+  disabled = false,
+  onOpenChange,
 }: DateRangePickerProps) {
   const t = useTranslations();
   const [selectedStartDate, setSelectedStartDate] =
@@ -65,6 +69,25 @@ export function DateRangePicker({
     window.addEventListener("resize", updateScreenSize);
     return () => window.removeEventListener("resize", updateScreenSize);
   }, []);
+
+  // Close popover when disabled becomes true
+  React.useEffect(() => {
+    if (disabled && open) {
+      setOpen(false);
+    }
+  }, [disabled, open]);
+
+  // Notify parent when open state changes
+  React.useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
+
+  // Handle open state changes
+  const handleOpenChange = (isOpen: boolean) => {
+    if (!disabled) {
+      setOpen(isOpen);
+    }
+  };
 
   const { isMobile, isTablet } = screenSize;
 
@@ -145,11 +168,12 @@ export function DateRangePicker({
   // Mobile-first design
   if (isMobile) {
     return (
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             dir="ltr"
+            disabled={disabled}
             className={cn(
               "flex items-center justify-between gap-1 px-2 py-1 text-xs h-7 max-w-[180px] min-w-[120px]",
               className
@@ -297,11 +321,12 @@ export function DateRangePicker({
   // Tablet Layout - Completely redesigned for better fit
   if (isTablet) {
     return (
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             dir="ltr"
+            disabled={disabled}
             className={cn(
               "flex items-center justify-between gap-2 px-2.5 py-1.5 text-sm h-8 max-w-[280px] min-w-[200px]",
               className
@@ -434,11 +459,12 @@ export function DateRangePicker({
 
   // Desktop Layout (side-by-side calendars)
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           dir="ltr"
+          disabled={disabled}
           className={cn(
             "flex items-center justify-between gap-2 px-3 py-2 text-sm w-full sm:w-auto min-w-0 h-9",
             className
