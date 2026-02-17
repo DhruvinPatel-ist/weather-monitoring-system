@@ -15,6 +15,7 @@ interface ChartCardProps {
     data: { time: string; fullTime?: string; value: number }[];
   }[];
   stationName?: string;
+  hideTooltip?: boolean;
 }
 
 export default function ChartCard({
@@ -23,6 +24,7 @@ export default function ChartCard({
   color,
   multiSeries,
   stationName,
+  hideTooltip,
 }: ChartCardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -54,12 +56,13 @@ export default function ChartCard({
         </div>
         <div className="h-[200px]">
           {multiSeries ? (
-            <MultiLineChart series={multiSeries} />
+            <MultiLineChart series={multiSeries} hideTooltip={hideTooltip} />
           ) : (
             <LineChart
               data={data || []}
               label={label}
               color={color || "#4693f1"}
+              hideTooltip={hideTooltip}
             />
           )}
         </div>

@@ -17,9 +17,10 @@ interface ChartProps {
   label: string;
   color: string;
   flat?: boolean;
+  hideTooltip?: boolean;
 }
 
-export function LineChart({ data, label, color, flat }: ChartProps) {
+export function LineChart({ data, label, color, flat, hideTooltip }: ChartProps) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <RechartsLineChart
@@ -38,12 +39,14 @@ export function LineChart({ data, label, color, flat }: ChartProps) {
           domain={flat ? [0, 1] : ["auto", "auto"]}
         />
         <CartesianGrid strokeDasharray="3 3" />
-        <Tooltip
-          formatter={(value: number) => `${value}`}
-          labelFormatter={(label: string, payload: any[]) =>
-            payload[0]?.payload?.fullTime || label
-          }
-        />
+        {!hideTooltip && (
+          <Tooltip
+            formatter={(value: number) => `${value}`}
+            labelFormatter={(label: string, payload: any[]) =>
+              payload[0]?.payload?.fullTime || label
+            }
+          />
+        )}
 
         <Line
           type="monotone"
@@ -57,7 +60,7 @@ export function LineChart({ data, label, color, flat }: ChartProps) {
   );
 }
 
-export function AreaChart({ data, label, color }: ChartProps) {
+export function AreaChart({ data, label, color, hideTooltip }: ChartProps) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <RechartsAreaChart
@@ -73,7 +76,7 @@ export function AreaChart({ data, label, color }: ChartProps) {
         />
         <YAxis tick={{ fontSize: 10 }} />
         <CartesianGrid strokeDasharray="3 3" />
-        <Tooltip />
+        {!hideTooltip && <Tooltip />}
         <Area
           type="monotone"
           dataKey="value"
@@ -88,11 +91,13 @@ export function AreaChart({ data, label, color }: ChartProps) {
 
 export function MultiLineChart({
   series,
+  hideTooltip,
 }: {
   series: {
     siteName: string;
     data: { time: string; value: number }[];
   }[];
+  hideTooltip?: boolean;
 }) {
   const mergedData: Record<string, any>[] = [];
 
@@ -119,7 +124,7 @@ export function MultiLineChart({
         />
         <YAxis tick={{ fontSize: 10 }} />
         <CartesianGrid strokeDasharray="3 3" />
-        <Tooltip />
+        {!hideTooltip && <Tooltip />}
         {series.map(({ siteName }, index) => (
           <Line
             key={siteName}

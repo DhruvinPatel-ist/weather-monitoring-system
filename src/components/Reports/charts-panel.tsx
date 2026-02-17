@@ -401,6 +401,7 @@ export default function ChartsPanel({
                         })`}
                         color="#4693f1"
                         multiSeries={multiSeries}
+                        hideTooltip={isSingleChartEnabled}
                       />
                     );
                   })}
@@ -433,6 +434,7 @@ export default function ChartsPanel({
                           color="#4693f1"
                           data={item.data}
                           stationName={translatedSiteName}
+                          hideTooltip={false}
                         />
                       ))}
                     </div>

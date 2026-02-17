@@ -26,7 +26,10 @@ interface TableColumn {
   key: string;
   label: string;
   width: string;
-  parameterId?: number;
+  // For parameter columns we can represent one logical parameter
+  // (e.g. "Air Temperature (°C)") that may map to multiple ParameterIDs
+  // across different sites.
+  parameterIds?: number[];
 }
 
 export default function SiteDataTable({
@@ -164,25 +167,46 @@ export default function SiteDataTable({
     }));
   }, [processedData]);
 
-  // Get unique parameters that appear in the data
-  const availableParameters = useMemo(() => {
-    const paramSet = new Set<number>();
-    processedData.forEach((row) => {
-      Object.keys(row.parameters).forEach((paramId) => {
-        paramSet.add(parseInt(paramId));
+  // Get unique logical parameters (by name + unit) that appear in the data.
+  // Multiple ParameterIDs that share the same name+unit (across sites)
+  // will be grouped under a single logical parameter so we don't render
+  // duplicate columns for each site.
+  const availableParameters = useMemo(
+    () => {
+      const grouped = new Map<
+        string,
+        { key: string; name: string; unit: string; ids: number[] }
+      >();
+
+      processedData.forEach((row) => {
+        Object.entries(row.parameters).forEach(([paramIdStr, paramData]) => {
+          const paramId = parseInt(paramIdStr);
+          const name = paramData.name;
+          const unit = paramData.unit || "";
+          const groupKey = `${name}__${unit}`;
+
+          if (!grouped.has(groupKey)) {
+            grouped.set(groupKey, {
+              key: groupKey,
+              name,
+              unit,
+              ids: [paramId],
+            });
+          } else {
+            const existing = grouped.get(groupKey)!;
+            if (!existing.ids.includes(paramId)) {
+              existing.ids.push(paramId);
+            }
+          }
+        });
       });
-    });
-    return Array.from(paramSet)
-      .map((paramId) => {
-        const param = parameters.find((p) => p.ParameterID === paramId);
-        return {
-          id: paramId,
-          name: param?.ParameterName || `Parameter ${paramId}`,
-          unit: param?.UnitName || "",
-        };
-      })
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [processedData, parameters]);
+
+      return Array.from(grouped.values()).sort((a, b) =>
+        a.name.localeCompare(b.name)
+      );
+    },
+    [processedData]
+  );
 
   // Initialize selected sites
   useEffect(() => {
@@ -204,14 +228,14 @@ export default function SiteDataTable({
   // Get parameters that should be visible based on site metrics selection
   const visibleParameters = useMemo(() => {
     if (!siteMetricsMap || Object.keys(siteMetricsMap).length === 0) {
-      // If no filtering, show all available parameters
+      // If no filtering, show all available logical parameters
       return availableParameters;
     }
 
     const visibleParamIds = new Set<number>();
 
     // Check which parameters are selected for each site
-    Object.entries(siteMetricsMap).forEach(([siteIdStr, siteMetrics]) => {
+    Object.values(siteMetricsMap).forEach((siteMetrics) => {
       Object.entries(siteMetrics).forEach(([paramIdStr, isSelected]) => {
         if (isSelected) {
           visibleParamIds.add(parseInt(paramIdStr));
@@ -219,7 +243,10 @@ export default function SiteDataTable({
       });
     });
 
-    return availableParameters.filter((param) => visibleParamIds.has(param.id));
+    // A logical parameter is visible if any of its underlying IDs is selected
+    return availableParameters.filter((param) =>
+      param.ids.some((id) => visibleParamIds.has(id))
+    );
   }, [availableParameters, siteMetricsMap]);
 
   // Filter data to only show rows that have data for selected parameters
@@ -262,10 +289,10 @@ export default function SiteDataTable({
     ];
 
     const parameterColumns: TableColumn[] = visibleParameters.map((param) => ({
-      key: `param_${param.id}`,
-      label: `${param.name} (${param.unit})`,
+      key: `param_${param.key}`,
+      label: param.unit ? `${param.name} (${param.unit})` : param.name,
       width: "w-[180px]",
-      parameterId: param.id,
+      parameterIds: param.ids,
     }));
 
     return [...fixedColumns, ...parameterColumns];
@@ -351,10 +378,11 @@ export default function SiteDataTable({
     return String(value);
   }
 
-  // Check if a specific parameter should be shown for a specific row
+  // Check if a specific logical parameter (mapped to multiple IDs) should
+  // be shown for a specific row
   const shouldShowParameterForRow = (
     row: ProcessedTableRow,
-    parameterId: number
+    parameterIds: number[]
   ) => {
     if (!siteMetricsMap || Object.keys(siteMetricsMap).length === 0) {
       return true;
@@ -363,7 +391,11 @@ export default function SiteDataTable({
     const siteMetrics = siteMetricsMap[row.siteId];
     if (!siteMetrics) return false;
 
-    return siteMetrics[parameterId] === true;
+    // Show if any of the parameter IDs that belong to this logical parameter
+    // are both selected in siteMetrics and present in the row data.
+    return parameterIds.some(
+      (id) => siteMetrics[id] === true && row.parameters[id] !== undefined
+    );
   };
 
   // Get cell value for a specific column
@@ -375,8 +407,17 @@ export default function SiteDataTable({
         return row.siteName;
       default:
         if (column.key.startsWith("param_")) {
-          const paramData = row.parameters[column.parameterId];
-          return paramData ? paramData.value : null;
+          if (!column.parameterIds || column.parameterIds.length === 0) {
+            return null;
+          }
+          // Find the first matching parameter ID that exists in this row
+          for (const id of column.parameterIds) {
+            const paramData = row.parameters[id];
+            if (paramData) {
+              return paramData.value;
+            }
+          }
+          return null;
         }
         return null;
     }
@@ -476,8 +517,13 @@ export default function SiteDataTable({
                       {tableColumns.map((column) => {
                         const cellValue = getCellValue(row, column);
                         const shouldShow =
-                          column.key.startsWith("param_") && column.parameterId
-                            ? shouldShowParameterForRow(row, column.parameterId)
+                          column.key.startsWith("param_") &&
+                          column.parameterIds &&
+                          column.parameterIds.length > 0
+                            ? shouldShowParameterForRow(
+                                row,
+                                column.parameterIds
+                              )
                             : true;
 
                         return (
