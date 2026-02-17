@@ -4,7 +4,7 @@ import Image from "next/image";
 // import { useLocationCard } from "@/hooks/useMetrics";
 import { WidgetConfig } from "@/types/user";
 import { useEffect, useState } from "react";
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations, useLocale, useMessages } from "next-intl";
 
 interface LocationCardProps {
   location: string;
@@ -36,6 +36,17 @@ LocationCardProps) {
   const sl = useTranslations("StationsList");
   const locale = useLocale();
   const isRTL = locale === "ar";
+  const messages = useMessages() as Record<string, any>;
+
+  const hasKeyInStationsList = (key: string) => {
+    const ns = messages?.StationsList as Record<string, any> | undefined;
+    return (
+      !!ns &&
+      Object.prototype.hasOwnProperty.call(ns, key) &&
+      ns[key] != null &&
+      String(ns[key]).length > 0
+    );
+  };
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -52,6 +63,8 @@ LocationCardProps) {
 
   // Helper function to safely get translated location
   const getLocationText = (locationKey: string) => {
+    if (!locationKey) return "Unknown Station";
+
     // If the location is already translated text (contains Arabic/special characters), return as is
     if (
       /[\u0600-\u06FF]/.test(locationKey) ||
@@ -61,16 +74,13 @@ LocationCardProps) {
       return locationKey;
     }
 
-    try {
-      // Try to get translation for the key
-      const translated = sl(locationKey);
-      return translated;
-    } catch (error) {
-      // If translation fails, return the original location string
-      console.log(`Translation error for location key: ${locationKey}`, error);
-      console.warn(`Translation not found for location key: ${locationKey}`);
-      return locationKey;
+    // Only attempt translation if the key exists in StationsList messages
+    if (hasKeyInStationsList(locationKey)) {
+      return sl(locationKey);
     }
+
+    // Fallback: return the original location string without throwing
+    return locationKey;
   };
 
   return (

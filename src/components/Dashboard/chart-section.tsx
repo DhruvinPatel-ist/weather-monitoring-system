@@ -69,9 +69,10 @@ function makeKey(params: {
   mode: string;
   from: string;
   to: string;
+  parameterId?: string | number;
 }) {
-  const { stationId, attribute, mode, from, to } = params;
-  return `${stationId}|${attribute}|${mode}|${from}|${to}`;
+  const { stationId, attribute, mode, from, to, parameterId = "" } = params;
+  return `${stationId}|${attribute}|${mode}|${from}|${to}|${parameterId}`;
 }
 
 /* -------------------- constants -------------------- */
@@ -315,6 +316,7 @@ export default function ChartSection({
         mode: timeframe?.value ?? "",
         from: fromDateString,
         to: toDateString,
+        parameterId: chartConfig?.parameterID ?? parameterID ?? "",
       }),
     [
       stationId,
@@ -322,6 +324,8 @@ export default function ChartSection({
       timeframe?.value,
       fromDateString,
       toDateString,
+      chartConfig?.parameterID,
+      parameterID,
     ]
   );
   const lastKeyRef = useRef<string | null>(null);
@@ -329,13 +333,21 @@ export default function ChartSection({
   useEffect(() => {
     if (preferParentData && Array.isArray(parentData)) return;
 
-    if (lastKeyRef.current === cacheKey) return;
-    lastKeyRef.current = cacheKey;
-
     const controller = new AbortController();
     const siteNum = parseInt(stationId, 10);
-    if (!effectiveAttribute || Number.isNaN(siteNum) || !timeframe?.value)
-      return;
+    if (!effectiveAttribute || Number.isNaN(siteNum) || !timeframe?.value) {
+      // If required inputs are missing, clear chart state and allow
+      // the effect to run again once they become available.
+      startTransition(() => {
+        setChartData([]);
+        setLoading(false);
+      });
+      lastKeyRef.current = null;
+      return () => controller.abort();
+    }
+
+    if (lastKeyRef.current === cacheKey) return;
+    lastKeyRef.current = cacheKey;
 
     const run = async () => {
       setLoading(true);

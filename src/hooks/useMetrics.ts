@@ -1,5 +1,4 @@
 // hooks/useMetrics.ts
-import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   frcloggerService,
@@ -12,9 +11,8 @@ export function useMetrics(
   timeframe: string,
   dateTimeRange: string
 ) {
-  const lastKeyRef = useRef<string | null>(null);
-  const query = useQuery({
-    queryKey: ["metrics", siteId, timeframe],
+  return useQuery({
+    queryKey: ["metrics", siteId, timeframe, dateTimeRange],
     queryFn: async () => {
       if (!siteId) throw new Error("siteId is required");
       if (!dateTimeRange) return [];
@@ -31,22 +29,8 @@ export function useMetrics(
         return []; // Return empty array on error
       }
     },
-    enabled: false,
+    enabled: !!siteId && !!timeframe && !!dateTimeRange,
   });
-
-  // Refetch exactly once whenever siteId / timeframe / dateTimeRange changes
-  useEffect(() => {
-    if (!siteId || !timeframe || !dateTimeRange) return;
-
-    const currentKey = `${siteId}|${timeframe}|${dateTimeRange}`;
-    if (lastKeyRef.current === currentKey) return;
-
-    lastKeyRef.current = currentKey;
-    query.refetch();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [siteId, timeframe, dateTimeRange]);
-
-  return query;
 }
 
 export function useLocationCard(siteId: string | undefined, timeframe: string, dateTimeRange?: string) {
