@@ -1,14 +1,6 @@
 "use client";
 
 import { useMemo, useCallback, useState } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslations } from "next-intl";
 import { Station } from "./parameter-view";
@@ -190,12 +182,12 @@ export default function TableView({
         <div className="h-full flex flex-col">
           <div className="border border-gray-200 rounded-md overflow-hidden">
             {showTable ? (
-              <div className="overflow-auto max-h-[calc(100vh-150px)]">
-                <Table className="min-w-full text-left">
-                  <TableHeader className="sticky top-0 bg-white border-b z-10">
-                    <TableRow>
-                      <TableHead 
-                        className="min-w-[150px] px-4 py-2 whitespace-nowrap font-semibold text-center cursor-pointer hover:bg-gray-100 select-none"
+              <div className="overflow-auto max-h-[calc(100vh-150px)] relative">
+                <table className="min-w-full text-left w-full caption-bottom text-sm border-none">
+                  <thead className="sticky top-0 bg-white border-b z-10 [&_tr]:border-none">
+                    <tr>
+                      <th
+                        className="min-w-[150px] px-4 py-2 whitespace-nowrap font-semibold text-center cursor-pointer hover:bg-gray-100 select-none text-foreground h-10 align-middle"
                         onClick={handleDateSort}
                       >
                         <div className="flex items-center justify-center gap-2">
@@ -217,33 +209,33 @@ export default function TableView({
                             />
                           </div>
                         </div>
-                      </TableHead>
-                      <TableHead className="min-w-[150px] px-4 py-2 whitespace-nowrap font-semibold text-center">
+                      </th>
+                      <th className="min-w-[150px] px-4 py-2 whitespace-nowrap font-semibold text-center text-foreground h-10 align-middle">
                         {t("Station Name")}
-                      </TableHead>
+                      </th>
                       {tableHeaders.map(({ key, label, unit }) => (
-                        <TableHead
+                        <th
                           key={key}
-                          className="min-w-[150px] px-4 py-2 whitespace-nowrap text-center font-semibold capitalize"
+                          className="min-w-[150px] px-4 py-2 whitespace-nowrap text-center font-semibold capitalize text-foreground h-10 align-middle"
                         >
                           {label}
                           {unit}
-                        </TableHead>
+                        </th>
                       ))}
-                    </TableRow>
-                  </TableHeader>
+                    </tr>
+                  </thead>
 
-                  <TableBody>
+                  <tbody className="[&_tr:last-child]:border-none">
                     {isAllDataLoading &&
                       [...Array(6)].map((_, i) => (
-                        <TableRow key={i} className="border-b">
-                          <TableCell
+                        <tr key={i} className="border-b hover:bg-muted/50 transition-colors">
+                          <td
                             colSpan={tableHeaders.length + 2}
-                            className="px-4 py-2"
+                            className="px-4 py-2 align-middle whitespace-nowrap"
                           >
                             <Skeleton className="h-4 w-full" />
-                          </TableCell>
-                        </TableRow>
+                          </td>
+                        </tr>
                       ))}
 
                     {!isAllDataLoading &&
@@ -253,38 +245,38 @@ export default function TableView({
                         );
 
                         return (
-                          <TableRow
+                          <tr
                             key={`${
                               row.intervalStart || row.CreatedAt
                             }-${index}`}
                             className={
                               index % 2 === 0
-                                ? "bg-white border-b"
-                                : "bg-gray-50 border-b"
+                                ? "bg-white border-b hover:bg-muted/50 transition-colors"
+                                : "bg-gray-50 border-b hover:bg-muted/50 transition-colors"
                             }
                           >
-                            <TableCell
-                              className="min-w-[150px] px-4 py-2 whitespace-nowrap text-center"
+                            <td
+                              className="min-w-[150px] px-4 py-2 whitespace-nowrap text-center align-middle"
                               dir="ltr"
                             >
                               {formattedDate}
-                            </TableCell>
-                            <TableCell className="min-w-[150px] px-4 py-2 whitespace-nowrap text-center">
+                            </td>
+                            <td className="min-w-[150px] px-4 py-2 whitespace-nowrap text-center align-middle">
                               {stationName}
-                            </TableCell>
+                            </td>
                             {tableHeaders.map(({ key }) => (
-                              <TableCell
+                              <td
                                 key={key}
-                                className="min-w-[150px] px-4 py-2 whitespace-nowrap text-center"
+                                className="min-w-[150px] px-4 py-2 whitespace-nowrap text-center align-middle"
                               >
                                 {formatCellValue(row[key])}
-                              </TableCell>
+                              </td>
                             ))}
-                          </TableRow>
+                          </tr>
                         );
                       })}
-                  </TableBody>
-                </Table>
+                  </tbody>
+                </table>
               </div>
             ) : (
               <div className="text-center py-10 text-sm text-gray-700">

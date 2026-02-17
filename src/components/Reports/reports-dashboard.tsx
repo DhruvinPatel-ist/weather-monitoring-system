@@ -177,7 +177,7 @@ export default function ReportsDashboard({
                         </div>
 
                         {/* Tab Contents */}
-                        <TabsContent value="charts" className="pt-4">
+                        <TabsContent value="charts" className="pt-4 flex-1 min-h-0 overflow-hidden">
                             {hasSelectedMetrics ? (
                                 <ChartsPanel
                                     selectedMetrics={defaultMetrics}
@@ -290,7 +290,7 @@ export default function ReportsDashboard({
                         </div>
                     </div>
 
-                    <TabsContent value="charts">
+                    <TabsContent value="charts" className="flex-1 min-h-0 overflow-hidden">
                         {hasSelectedMetrics ? (
                             <ChartsPanel
                                 selectedMetrics={defaultMetrics}

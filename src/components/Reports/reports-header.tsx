@@ -30,7 +30,7 @@ interface ReportsHeaderProps {
   siteMetricsMap?: void;
   setSiteMetricsMap?: void;
   selectedTimeframe: { label: string; value: string } | null;
-  setSelectedTimeframe: (val: { label: string; value: string }) => void;
+  setSelectedTimeframe: (val: { label: string; value: string } | null) => void;
   startDate?: Date;
   endDate?: Date;
   onDateRangeChange?: (start: Date, end: Date) => void;
@@ -241,6 +241,11 @@ export default function ReportsHeader({
       ? [...selectedSites, siteId]
       : selectedSites.filter((id) => id !== siteId);
     setSelectedSites(updatedSites);
+
+    // When all sites are unselected, also reset the selected timeframe
+    if (updatedSites.length === 0) {
+      setSelectedTimeframe(null);
+    }
 
     if (onDataReset) onDataReset();
 

@@ -139,7 +139,7 @@ export default function MetricCard({
       case "medium":
         return "scale-75";
       default:
-        return "";
+        return "scale-75";
     }
   };
 
@@ -151,7 +151,7 @@ export default function MetricCard({
       case "medium":
         return "h-[80px]";
       default:
-        return "h-full";
+        return "h-[75px]";
     }
   };
 

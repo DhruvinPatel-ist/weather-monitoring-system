@@ -210,8 +210,13 @@ export default function MetricsPanel({
   const resetAllMetrics = () => {
     setSiteMetricsMap({});
     setGeneratedData([]);
+    setLastSelectedMetricKeys([]);
     onDataReset?.();
     setPayload(null); // also clear exported payload if any
+    const clearMetricsEvent = new CustomEvent("metricSelected", {
+      detail: { metricKeys: [] },
+    });
+    window.dispatchEvent(clearMetricsEvent);
   };
 
   useEffect(() => {
@@ -220,12 +225,27 @@ export default function MetricsPanel({
 
  const [lastSelectedMetricKeys, setLastSelectedMetricKeys] = useState<string[]>([]);
  useEffect(() => {
+    const handleSiteCleared = () => {
+      setLastSelectedMetricKeys([]);
+      setSiteMetricsMap({});
+    };
+    
+    window.addEventListener("siteCleared", handleSiteCleared);
+    return () => {
+      window.removeEventListener("siteCleared", handleSiteCleared);
+    };
+  }, []);
+ useEffect(() => {
     const handleMetricSelected = (event: CustomEvent) => {
       const { metricKeys, metricIds } = event.detail || {};
       const buildKey = (p: ParameterRow) =>
         `${p.ParameterName}__${p.UnitName || ""}`;
       if (metricKeys && Array.isArray(metricKeys)) {
         setLastSelectedMetricKeys(metricKeys);
+        if (metricKeys.length === 0) {
+          setSiteMetricsMap({});
+          return;
+        }
       }
       setSiteMetricsMap((prev: any) => {
         const updated = { ...prev };
@@ -237,10 +257,14 @@ export default function MetricsPanel({
 
             siteParams.forEach((p) => {
               const key = buildKey(p);
+              if (!metricKeys.includes(key) && updated[siteId][p.ParameterID]) {
+                updated[siteId][p.ParameterID] = false;
+              }
+            });
+            siteParams.forEach((p) => {
+              const key = buildKey(p);
               if (metricKeys.includes(key)) {
                 updated[siteId][p.ParameterID] = true;
-              } else if (updated[siteId][p.ParameterID]) {
-                updated[siteId][p.ParameterID] = false;
               }
             });
           });
@@ -255,11 +279,16 @@ export default function MetricsPanel({
 
           selectedSiteIds.forEach((siteId) => {
             if (!updated[siteId]) updated[siteId] = {};
+            const siteParams = paramsBySiteId[siteId] || [];
+            const siteParamIds = new Set(siteParams.map(p => p.ParameterID));
             allAvailableMetricIds.forEach((metricId) => {
-              if (metricIds.includes(metricId)) {
-                updated[siteId][metricId] = true;
-              } else if (updated[siteId][metricId]) {
+              if (siteParamIds.has(metricId) && !metricIds.includes(metricId) && updated[siteId][metricId]) {
                 updated[siteId][metricId] = false;
+              }
+            });
+            allAvailableMetricIds.forEach((metricId) => {
+              if (siteParamIds.has(metricId) && metricIds.includes(metricId)) {
+                updated[siteId][metricId] = true;
               }
             });
           });
@@ -347,10 +376,8 @@ export default function MetricsPanel({
 
     // Metrics selected in ALL currently selected sites
     const globallySelectedMetricKeys = Array.from(
-      metricKeyToSelectedSites.entries()
-    )
-      .filter(([, sitesSet]) => sitesSet.size === selectedSiteIds.length)
-      .map(([key]) => key);
+      metricKeyToSelectedSites.keys()
+    );
 
     const sidebarEvent = new CustomEvent("metricsSidebarChanged", {
       detail: { metricKeys: globallySelectedMetricKeys },

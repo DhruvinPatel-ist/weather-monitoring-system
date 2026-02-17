@@ -342,105 +342,107 @@ export default function ChartsPanel({
       : [];
 
   return (
-    <div className="space-y-6 max-h-[calc(100vh-165px)] overflow-y-auto pr-2">
-      {loading && (
-        <div className="text-center text-muted-foreground py-10 text-base font-medium">
-          {t("Loading")}...
-        </div>
-      )}
+    <div className="h-full overflow-y-auto pr-2">
+      <div className="space-y-6 pb-8">
+        {loading && (
+          <div className="text-center text-muted-foreground py-10 text-base font-medium">
+            {t("Loading")}...
+          </div>
+        )}
 
-      {!loading && filteredData.length === 0 && (
-        <div className="text-center text-muted-foreground py-10 text-base font-medium">
-          {reportsT("No Data Available")}
-        </div>
-      )}
+        {!loading && filteredData.length === 0 && (
+          <div className="text-center text-muted-foreground py-10 text-base font-medium">
+            {reportsT("No Data Available")}
+          </div>
+        )}
 
-      {!loading && filteredData.length > 0 && (
-        <>
-          {isSingleChartEnabled ? (
-            // Single chart mode - shared legend below tabs, charts per parameter
-            <>
-              {siteLegend.length > 0 && (
-                <div className="flex flex-wrap items-center gap-3 mb-4 text-xs text-gray-600">
-                  {siteLegend.map((item) => (
-                    <div key={item.label} className="flex items-center gap-1">
-                      <span
-                        className="inline-block w-3 h-3 rounded-sm border border-gray-300"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="truncate max-w-[160px]">
-                        {item.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div
-                className={`grid gap-6 ${
-                  isMobileOrTablet ? "grid-cols-1" : "grid-cols-2"
-                }`}
-              >
-                {getUniqueParameterNames().map((parameterName) => {
-                  const parameterData = filteredData.filter(
-                    (item) => item.parameterName === parameterName
-                  );
-                  if (parameterData.length === 0) return null;
-
-                  // Create multi-series data for this parameter
-                  const multiSeries = parameterData.map((item) => ({
-                    siteName: getTranslatedSiteName(item.siteName),
-                    data: item.data,
-                  }));
-
-                  return (
-                    <ChartCard
-                      key={parameterName}
-                      label={`${parameterName} (${
-                        parameterData[0]?.unitName || ""
-                      })`}
-                      color="#4693f1"
-                      multiSeries={multiSeries}
-                    />
-                  );
-                })}
-              </div>
-            </>
-          ) : (
-            // Multiple chart mode - group by site
-            getUniqueSiteNames().map((siteName) => {
-              const siteData = filteredData.filter(
-                (item) => item.siteName === siteName
-              );
-              if (siteData.length === 0) return null;
-
-              const translatedSiteName = getTranslatedSiteName(siteName);
-
-              return (
-                <div key={siteName}>
-                  <h2 className="text-lg font-bold mb-2">
-                    {translatedSiteName}
-                  </h2>
-                  <div
-                    className={`grid gap-6 ${
-                      isMobileOrTablet ? "grid-cols-1" : "grid-cols-2"
-                    }`}
-                  >
-                    {siteData.map((item) => (
-                      <ChartCard
-                        key={`${siteName}-${item.parameterId}`}
-                        label={`${item.parameterName} (${item.unitName})`}
-                        color="#4693f1"
-                        data={item.data}
-                        stationName={translatedSiteName}
-                      />
+        {!loading && filteredData.length > 0 && (
+          <>
+            {isSingleChartEnabled ? (
+              // Single chart mode - shared legend below tabs, charts per parameter
+              <>
+                {siteLegend.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-3 mb-4 text-xs text-gray-600">
+                    {siteLegend.map((item) => (
+                      <div key={item.label} className="flex items-center gap-1">
+                        <span
+                          className="inline-block w-3 h-3 rounded-sm border border-gray-300"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <span className="truncate max-w-[160px]">
+                          {item.label}
+                        </span>
+                      </div>
                     ))}
                   </div>
+                )}
+                <div
+                  className={`grid gap-6 ${
+                    isMobileOrTablet ? "grid-cols-1" : "grid-cols-2"
+                  }`}
+                >
+                  {getUniqueParameterNames().map((parameterName) => {
+                    const parameterData = filteredData.filter(
+                      (item) => item.parameterName === parameterName
+                    );
+                    if (parameterData.length === 0) return null;
+
+                    // Create multi-series data for this parameter
+                    const multiSeries = parameterData.map((item) => ({
+                      siteName: getTranslatedSiteName(item.siteName),
+                      data: item.data,
+                    }));
+
+                    return (
+                      <ChartCard
+                        key={parameterName}
+                        label={`${parameterName} (${
+                          parameterData[0]?.unitName || ""
+                        })`}
+                        color="#4693f1"
+                        multiSeries={multiSeries}
+                      />
+                    );
+                  })}
                 </div>
-              );
-            })
-          )}
-        </>
-      )}
+              </>
+            ) : (
+              // Multiple chart mode - group by site
+              getUniqueSiteNames().map((siteName) => {
+                const siteData = filteredData.filter(
+                  (item) => item.siteName === siteName
+                );
+                if (siteData.length === 0) return null;
+
+                const translatedSiteName = getTranslatedSiteName(siteName);
+
+                return (
+                  <div key={siteName}>
+                    <h2 className="text-lg font-bold mb-2">
+                      {translatedSiteName}
+                    </h2>
+                    <div
+                      className={`grid gap-6 ${
+                        isMobileOrTablet ? "grid-cols-1" : "grid-cols-2"
+                      }`}
+                    >
+                      {siteData.map((item) => (
+                        <ChartCard
+                          key={`${siteName}-${item.parameterId}`}
+                          label={`${item.parameterName} (${item.unitName})`}
+                          color="#4693f1"
+                          data={item.data}
+                          stationName={translatedSiteName}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

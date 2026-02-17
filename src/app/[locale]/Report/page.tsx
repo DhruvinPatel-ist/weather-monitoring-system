@@ -25,7 +25,7 @@ export default function DashboardPage() {
   // Add state for start and end dates
   const [startDate, setStartDate] = useState<Date>(() => {
     const date = new Date();
-    date.setDate(date.getDate() - 7); // Default to 7 days ago
+    date.setDate(date.getDate() - 1); // Default to 1 day ago (Live Data)
     return date;
   });
   const [endDate, setEndDate] = useState<Date>(new Date());
@@ -119,6 +119,13 @@ export default function DashboardPage() {
                 },
               });
               window.dispatchEvent(siteSelectedEvent);
+              window.dispatchEvent(new CustomEvent("siteCleared"));
+              const metricSelectedEvent = new CustomEvent("metricSelected", {
+                detail: {
+                  metricKeys: [],
+                },
+              });
+              window.dispatchEvent(metricSelectedEvent);
             }}
             onClearDate={() => setSelectedDate("")}
             generatedData={generatedData}

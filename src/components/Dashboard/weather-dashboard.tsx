@@ -89,9 +89,9 @@ export default function Dashboard() {
     return date;
   });
   const [endDate, setEndDate] = useState<Date>(new Date());
-  // Start with custom date range enabled so initial data matches the
-  // DateRangePicker default (last 7 days) instead of "today / yesterday".
-  const [useCustomDateRange, setUseCustomDateRange] = useState(true);
+  // Start with live data enabled by default (not custom date range)
+  // This ensures API calls use "live" timeframe instead of date-based queries
+  const [useCustomDateRange, setUseCustomDateRange] = useState(false);
   const [dateTimeRange, setDateTimeRange] = useState<string>("");
 
   const { data: stationsData = [], isLoading: isStationsLoading } =
